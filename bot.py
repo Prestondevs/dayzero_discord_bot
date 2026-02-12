@@ -20,25 +20,21 @@ intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
 
-#when bot is ready
-@client.event
-async def on_ready():
-    print(f'{client.user.name} has connected to Discord!')
-
+#when bot is ready send a message to terminal
 #Functions 
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
 
 @client.event
-async def on_message(message):
+async def on_message(message, member):
     if message.author == client.user:
         return
 
-    if message.content.startswith(''):
-        await message.channel.send('')
+    if message.content.upper.startswith('-HELP'):
+        await message.channel.send('test123')
 
-#Member joining welcoming message
+#Member joining welcoming message not working for some reason
 @client.event
 async def on_member_join(member):
     await member.create_dm()
@@ -49,6 +45,4 @@ async def on_member_join(member):
 
 
 #Execute
-
-
 client.run(TOKEN)
