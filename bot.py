@@ -20,6 +20,11 @@ intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
 
+#when bot is ready
+@client.event
+async def on_ready():
+    print(f'{client.user.name} has connected to Discord!')
+
 #Functions 
 @client.event
 async def on_ready():
@@ -30,9 +35,20 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    if message.content.startswith('$hello'):
-        await message.channel.send('Hello!')
+    if message.content.startswith(''):
+        await message.channel.send('')
+
+#Member joining welcoming message
+@client.event
+async def on_member_join(member):
+    await member.create_dm()
+    await member.dm_channel.send(
+        f'Hi {member.name}, welcome to DayZero, consider checking out #start-here and #faq to get started!'
+    )
+
 
 
 #Execute
+
+
 client.run(TOKEN)
