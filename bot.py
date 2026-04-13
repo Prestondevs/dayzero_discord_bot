@@ -9,9 +9,10 @@ scheduled announcements, encoding/decoding utilities, and more.
 import os
 import asyncio
 import logging
+import random
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -36,8 +37,41 @@ bot = commands.Bot(
     command_prefix=PREFIX,
     intents=intents,
     help_command=None,
-    activity=discord.Activity(type=discord.ActivityType.watching, name=f"{PREFIX}help | DayZero"),
 )
+
+STATUS_QUOTES = [
+    f"{PREFIX}help | DayZero",
+    "Hackers gonna hack",
+    "Scanning for vulnerabilities...",
+    "sudo rm -rf /sleep",
+    "There is no patch for stupidity",
+    "Encrypt everything",
+    "CTF grinding hours",
+    "01100100 01100001 01111001 00110000",
+    "Brute forcing your Wi-Fi...",
+    "Decrypting the matrix",
+    "/etc/shadow has entered the chat",
+    "Kernel panic! Just kidding.",
+    "Pwning noobs since day zero",
+    "Wireshark is my therapist",
+    "I read your packets",
+    "XSS is not a clothing size",
+    "SELECT * FROM secrets",
+    "rm -rf doubts",
+    "Trust no one. Verify everything.",
+    "Have you tried turning it off and on again?",
+]
+
+@tasks.loop(minutes=5)
+async def rotate_status():
+    quote = random.choice(STATUS_QUOTES)
+    await bot.change_presence(
+        activity=discord.Activity(type=discord.ActivityType.watching, name=quote)
+    )
+
+@rotate_status.before_loop
+async def before_rotate_status():
+    await bot.wait_until_ready()
 
 COGS = [
     "cogs.sectools",
@@ -64,6 +98,8 @@ async def on_ready():
     log.info("Logged in as %s (ID: %s)", bot.user, bot.user.id)
     log.info("Connected to %d guild(s)", len(bot.guilds))
     log.info("Bot is ready!")
+    if not rotate_status.is_running():
+        rotate_status.start()
 
 @bot.event
 async def on_command_error(ctx: commands.Context, error: commands.CommandError):
