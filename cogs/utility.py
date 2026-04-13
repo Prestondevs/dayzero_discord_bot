@@ -5,12 +5,14 @@ Provides server info, user info, avatar, poll creation, ping,
 uptime, role info, emoji list, and a coin flip / dice roll.
 """
 
-import datetime
 import platform
+import random
 import time
 
 import discord
 from discord.ext import commands
+
+
 class Utility(commands.Cog, name="Utility"):
     """General-purpose utility commands."""
 
@@ -22,7 +24,7 @@ class Utility(commands.Cog, name="Utility"):
     async def ping(self, ctx: commands.Context):
         """Show the bot's latency.
 
-        Usage: -ping
+        Usage: .ping
         """
         latency = round(self.bot.latency * 1000)
         await ctx.send(f"Pong! `{latency}ms`")
@@ -31,7 +33,7 @@ class Utility(commands.Cog, name="Utility"):
     async def uptime(self, ctx: commands.Context):
         """Show how long the bot has been running.
 
-        Usage: -uptime
+        Usage: .uptime
         """
         elapsed = int(time.time() - self.start_time)
         days, remainder = divmod(elapsed, 86400)
@@ -51,7 +53,7 @@ class Utility(commands.Cog, name="Utility"):
     async def bot_info(self, ctx: commands.Context):
         """Show information about the bot.
 
-        Usage: -botinfo
+        Usage: .botinfo
         """
         embed = discord.Embed(
             title="DayZero Bot",
@@ -75,7 +77,7 @@ class Utility(commands.Cog, name="Utility"):
     async def server_info(self, ctx: commands.Context):
         """Display information about the current server.
 
-        Usage: -serverinfo
+        Usage: .serverinfo
         """
         g = ctx.guild
         embed = discord.Embed(title=g.name, color=0x3498DB)
@@ -94,12 +96,12 @@ class Utility(commands.Cog, name="Utility"):
             embed.set_image(url=g.banner.url)
         await ctx.send(embed=embed)
 
-    @commands.command(name="userinfo", aliases=["whois", "user"])
+    @commands.command(name="userinfo", aliases=["user"])
     @commands.guild_only()
     async def user_info(self, ctx: commands.Context, member: discord.Member = None):
         """Display information about a user (defaults to yourself).
 
-        Usage: -userinfo [@user]
+        Usage: .userinfo [@user]
         """
         member = member or ctx.author
         roles = [r.mention for r in member.roles if r != ctx.guild.default_role]
@@ -123,7 +125,7 @@ class Utility(commands.Cog, name="Utility"):
     async def avatar(self, ctx: commands.Context, member: discord.Member = None):
         """Show a user's avatar in full size.
 
-        Usage: -avatar [@user]
+        Usage: .avatar [@user]
         """
         member = member or ctx.author
         embed = discord.Embed(title=f"{member}'s Avatar", color=member.color)
@@ -135,7 +137,7 @@ class Utility(commands.Cog, name="Utility"):
     async def role_info(self, ctx: commands.Context, *, role: discord.Role):
         """Show information about a role.
 
-        Usage: -roleinfo <role_name>
+        Usage: .roleinfo <role_name>
         """
         embed = discord.Embed(title=f"Role: {role.name}", color=role.color)
         embed.add_field(name="ID", value=str(role.id))
@@ -155,7 +157,7 @@ class Utility(commands.Cog, name="Utility"):
     async def create_poll(self, ctx: commands.Context, question: str, *options: str):
         """Create a poll with up to 10 options.
 
-        Usage: -poll "Question?" "Option 1" "Option 2" ...
+        Usage: .poll "Question?" "Option 1" "Option 2" ...
         If no options given, creates a Yes/No poll.
         """
         number_emojis = ["1\u20e3", "2\u20e3", "3\u20e3", "4\u20e3", "5\u20e3",
@@ -184,7 +186,7 @@ class Utility(commands.Cog, name="Utility"):
     async def quick_vote(self, ctx: commands.Context, *, question: str):
         """Create a quick yes/no vote.
 
-        Usage: -vote Should we do a CTF this weekend?
+        Usage: .vote Should we do a CTF this weekend?
         """
         embed = discord.Embed(title=question, color=0x2ECC71)
         embed.set_footer(text=f"Vote by {ctx.author}")
@@ -197,9 +199,8 @@ class Utility(commands.Cog, name="Utility"):
     async def coin_flip(self, ctx: commands.Context):
         """Flip a coin.
 
-        Usage: -coinflip
+        Usage: .coinflip
         """
-        import random
         result = random.choice(["Heads", "Tails"])
         await ctx.send(f"**{result}!**")
 
@@ -207,10 +208,9 @@ class Utility(commands.Cog, name="Utility"):
     async def dice_roll(self, ctx: commands.Context, dice: str = "1d6"):
         """Roll dice in NdN format.
 
-        Usage: -roll [NdN]
-        Example: -roll 2d20
+        Usage: .roll [NdN]
+        Example: .roll 2d20
         """
-        import random
         try:
             count, sides = dice.lower().split("d")
             count = int(count) if count else 1
@@ -234,8 +234,7 @@ class Utility(commands.Cog, name="Utility"):
     async def build_embed(self, ctx: commands.Context, title: str, *, description: str):
         """Create a custom embed message.
 
-        Usage: -embed "Title" Description text here
-        Supports basic Discord markdown in the description.
+        Usage: .embed "Title" Description text here
         """
         embed = discord.Embed(
             title=title,
@@ -248,5 +247,7 @@ class Utility(commands.Cog, name="Utility"):
             await ctx.message.delete()
         except discord.Forbidden:
             pass
+
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(Utility(bot))

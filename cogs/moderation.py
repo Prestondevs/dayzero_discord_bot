@@ -9,6 +9,8 @@ import datetime
 
 import discord
 from discord.ext import commands
+
+
 class Moderation(commands.Cog, name="Moderation"):
     """Server moderation commands (requires appropriate permissions)."""
 
@@ -21,7 +23,7 @@ class Moderation(commands.Cog, name="Moderation"):
     async def kick(self, ctx: commands.Context, member: discord.Member, *, reason: str = "No reason provided"):
         """Kick a member from the server.
 
-        Usage: -kick @user [reason]
+        Usage: .kick @user [reason]
         """
         if member.top_role >= ctx.author.top_role:
             await ctx.send("You cannot kick someone with an equal or higher role.")
@@ -39,7 +41,7 @@ class Moderation(commands.Cog, name="Moderation"):
     async def ban(self, ctx: commands.Context, member: discord.Member, *, reason: str = "No reason provided"):
         """Ban a member from the server.
 
-        Usage: -ban @user [reason]
+        Usage: .ban @user [reason]
         """
         if member.top_role >= ctx.author.top_role:
             await ctx.send("You cannot ban someone with an equal or higher role.")
@@ -57,7 +59,7 @@ class Moderation(commands.Cog, name="Moderation"):
     async def unban(self, ctx: commands.Context, user_id: int):
         """Unban a user by their ID.
 
-        Usage: -unban <user_id>
+        Usage: .unban <user_id>
         """
         try:
             user = await self.bot.fetch_user(user_id)
@@ -72,7 +74,7 @@ class Moderation(commands.Cog, name="Moderation"):
     async def mute(self, ctx: commands.Context, member: discord.Member, duration: int = 10, *, reason: str = "No reason provided"):
         """Timeout a member for a specified number of minutes.
 
-        Usage: -mute @user [minutes] [reason]
+        Usage: .mute @user [minutes] [reason]
         Default: 10 minutes. Max: 40320 (28 days).
         """
         if member.top_role >= ctx.author.top_role:
@@ -96,7 +98,7 @@ class Moderation(commands.Cog, name="Moderation"):
     async def unmute(self, ctx: commands.Context, member: discord.Member):
         """Remove a timeout from a member.
 
-        Usage: -unmute @user
+        Usage: .unmute @user
         """
         await member.timeout(None)
         await ctx.send(f"Removed timeout from **{member}**.")
@@ -107,7 +109,7 @@ class Moderation(commands.Cog, name="Moderation"):
     async def purge(self, ctx: commands.Context, amount: int, member: discord.Member = None):
         """Delete messages from the channel.
 
-        Usage: -purge <amount> [@user]
+        Usage: .purge <amount> [@user]
         If a user is specified, only their messages are deleted.
         Max: 200 messages.
         """
@@ -131,7 +133,7 @@ class Moderation(commands.Cog, name="Moderation"):
     async def slowmode(self, ctx: commands.Context, seconds: int = 0):
         """Set slowmode delay for the current channel.
 
-        Usage: -slowmode [seconds]
+        Usage: .slowmode [seconds]
         Set to 0 to disable. Max: 21600 (6 hours).
         """
         if seconds < 0 or seconds > 21600:
@@ -149,7 +151,7 @@ class Moderation(commands.Cog, name="Moderation"):
     async def lock_channel(self, ctx: commands.Context):
         """Lock the current channel (prevent @everyone from sending messages).
 
-        Usage: -lock
+        Usage: .lock
         """
         overwrite = ctx.channel.overwrites_for(ctx.guild.default_role)
         overwrite.send_messages = False
@@ -162,7 +164,7 @@ class Moderation(commands.Cog, name="Moderation"):
     async def unlock_channel(self, ctx: commands.Context):
         """Unlock the current channel.
 
-        Usage: -unlock
+        Usage: .unlock
         """
         overwrite = ctx.channel.overwrites_for(ctx.guild.default_role)
         overwrite.send_messages = None
@@ -174,7 +176,7 @@ class Moderation(commands.Cog, name="Moderation"):
     async def warn(self, ctx: commands.Context, member: discord.Member, *, reason: str = "No reason provided"):
         """Issue a warning to a member (logged in chat).
 
-        Usage: -warn @user [reason]
+        Usage: .warn @user [reason]
         """
         embed = discord.Embed(title="Member Warned", color=0xF1C40F)
         embed.add_field(name="User", value=f"{member.mention} ({member.id})")
@@ -182,7 +184,6 @@ class Moderation(commands.Cog, name="Moderation"):
         embed.add_field(name="Reason", value=reason, inline=False)
         embed.timestamp = discord.utils.utcnow()
         await ctx.send(embed=embed)
-        # Try to DM the user
         try:
             await member.send(
                 f"You have been warned in **{ctx.guild.name}** for: {reason}"
@@ -196,7 +197,7 @@ class Moderation(commands.Cog, name="Moderation"):
     async def change_nick(self, ctx: commands.Context, member: discord.Member, *, nickname: str = None):
         """Change a member's nickname (omit nickname to reset).
 
-        Usage: -nick @user [new_nickname]
+        Usage: .nick @user [new_nickname]
         """
         if member.top_role >= ctx.author.top_role:
             await ctx.send("You cannot change the nickname of someone with an equal or higher role.")
@@ -206,5 +207,7 @@ class Moderation(commands.Cog, name="Moderation"):
             await ctx.send(f"Changed **{member}**'s nickname to **{nickname}**.")
         else:
             await ctx.send(f"Reset **{member}**'s nickname.")
+
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(Moderation(bot))

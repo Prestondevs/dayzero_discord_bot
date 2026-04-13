@@ -35,19 +35,22 @@ intents.members = True
 bot = commands.Bot(
     command_prefix=PREFIX,
     intents=intents,
-    help_command=None,  # We provide our own
+    help_command=None,
     activity=discord.Activity(type=discord.ActivityType.watching, name=f"{PREFIX}help | DayZero"),
 )
 
 COGS = [
-    "cogs.cybersecurity",
+    "cogs.sectools",
     "cogs.encoding",
+    "cogs.ctftime",
+    "cogs.secnews",
     "cogs.moderation",
     "cogs.scheduling",
     "cogs.utility",
     "cogs.welcome",
     "cogs.help",
 ]
+
 async def load_cogs():
     for cog in COGS:
         try:
@@ -55,15 +58,17 @@ async def load_cogs():
             log.info("Loaded cog: %s", cog)
         except Exception as exc:
             log.error("Failed to load cog %s: %s", cog, exc)
+
 @bot.event
 async def on_ready():
     log.info("Logged in as %s (ID: %s)", bot.user, bot.user.id)
     log.info("Connected to %d guild(s)", len(bot.guilds))
     log.info("Bot is ready!")
+
 @bot.event
 async def on_command_error(ctx: commands.Context, error: commands.CommandError):
     if isinstance(error, commands.CommandNotFound):
-        return  # Silently ignore unknown commands
+        return
     if isinstance(error, commands.MissingPermissions):
         await ctx.send("You don't have permission to use that command.")
         return
@@ -79,12 +84,13 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
     if isinstance(error, commands.CommandOnCooldown):
         await ctx.send(f"Command on cooldown. Try again in {error.retry_after:.1f}s.")
         return
-    # Unexpected errors
     log.error("Unhandled command error in %s: %s", ctx.command, error, exc_info=error)
     await ctx.send("An unexpected error occurred. Please try again later.")
+
 async def main():
     async with bot:
         await load_cogs()
         await bot.start(TOKEN)
+
 if __name__ == "__main__":
     asyncio.run(main())

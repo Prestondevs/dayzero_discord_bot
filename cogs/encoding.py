@@ -7,6 +7,8 @@ encoding/decoding utilities useful for CTF challenges and general cybersecurity 
 
 import base64
 import binascii
+import collections
+import math
 import urllib.parse
 
 import discord
@@ -27,6 +29,8 @@ MORSE_CODE = {
     '"': ".-..-.", "$": "...-..-", "@": ".--.-.",
 }
 MORSE_REVERSE = {v: k for k, v in MORSE_CODE.items()}
+
+
 class Encoding(commands.Cog, name="Encoding"):
     """Encoding, decoding, and cipher tools for CTFs and security work."""
 
@@ -44,7 +48,7 @@ class Encoding(commands.Cog, name="Encoding"):
     async def base64_encode(self, ctx: commands.Context, *, text: str):
         """Encode text to Base64.
 
-        Usage: -b64encode <text>
+        Usage: .b64encode <text>
         """
         encoded = base64.b64encode(text.encode()).decode()
         await ctx.send(embed=self._embed("Base64 Encode", text, encoded))
@@ -53,7 +57,7 @@ class Encoding(commands.Cog, name="Encoding"):
     async def base64_decode(self, ctx: commands.Context, *, text: str):
         """Decode Base64 to text.
 
-        Usage: -b64decode <base64_string>
+        Usage: .b64decode <base64_string>
         """
         try:
             decoded = base64.b64decode(text).decode("utf-8", errors="replace")
@@ -66,7 +70,7 @@ class Encoding(commands.Cog, name="Encoding"):
     async def hex_encode(self, ctx: commands.Context, *, text: str):
         """Encode text to hexadecimal.
 
-        Usage: -hexencode <text>
+        Usage: .hexencode <text>
         """
         encoded = text.encode().hex()
         await ctx.send(embed=self._embed("Hex Encode", text, encoded))
@@ -75,7 +79,7 @@ class Encoding(commands.Cog, name="Encoding"):
     async def hex_decode(self, ctx: commands.Context, *, text: str):
         """Decode hexadecimal to text.
 
-        Usage: -hexdecode <hex_string>
+        Usage: .hexdecode <hex_string>
         """
         cleaned = text.replace(" ", "").replace("0x", "")
         try:
@@ -89,7 +93,7 @@ class Encoding(commands.Cog, name="Encoding"):
     async def url_encode(self, ctx: commands.Context, *, text: str):
         """URL-encode a string.
 
-        Usage: -urlencode <text>
+        Usage: .urlencode <text>
         """
         encoded = urllib.parse.quote(text, safe="")
         await ctx.send(embed=self._embed("URL Encode", text, encoded))
@@ -98,7 +102,7 @@ class Encoding(commands.Cog, name="Encoding"):
     async def url_decode(self, ctx: commands.Context, *, text: str):
         """URL-decode a string.
 
-        Usage: -urldecode <encoded_text>
+        Usage: .urldecode <encoded_text>
         """
         decoded = urllib.parse.unquote(text)
         await ctx.send(embed=self._embed("URL Decode", text, decoded))
@@ -107,7 +111,7 @@ class Encoding(commands.Cog, name="Encoding"):
     async def rot13(self, ctx: commands.Context, *, text: str):
         """Apply ROT13 to text (encode and decode are the same operation).
 
-        Usage: -rot13 <text>
+        Usage: .rot13 <text>
         """
         result = text.translate(
             str.maketrans(
@@ -121,8 +125,8 @@ class Encoding(commands.Cog, name="Encoding"):
     async def caesar_cipher(self, ctx: commands.Context, shift: int, *, text: str):
         """Apply a Caesar cipher with a given shift.
 
-        Usage: -caesar <shift> <text>
-        Example: -caesar 3 hello world
+        Usage: .caesar <shift> <text>
+        Example: .caesar 3 hello world
         """
         result = []
         for ch in text:
@@ -138,7 +142,7 @@ class Encoding(commands.Cog, name="Encoding"):
     async def caesar_brute(self, ctx: commands.Context, *, text: str):
         """Brute-force all 25 Caesar cipher rotations.
 
-        Usage: -caesarbrute <ciphertext>
+        Usage: .caesarbrute <ciphertext>
         """
         lines = []
         for shift in range(1, 26):
@@ -166,7 +170,7 @@ class Encoding(commands.Cog, name="Encoding"):
     async def to_binary(self, ctx: commands.Context, *, text: str):
         """Convert text to binary representation.
 
-        Usage: -tobinary <text>
+        Usage: .tobinary <text>
         """
         binary = " ".join(format(ord(c), "08b") for c in text)
         await ctx.send(embed=self._embed("Text to Binary", text, binary))
@@ -175,7 +179,7 @@ class Encoding(commands.Cog, name="Encoding"):
     async def from_binary(self, ctx: commands.Context, *, text: str):
         """Convert binary (space-separated bytes) back to text.
 
-        Usage: -frombinary 01101000 01101001
+        Usage: .frombinary 01101000 01101001
         """
         try:
             chars = [chr(int(b, 2)) for b in text.split()]
@@ -189,7 +193,7 @@ class Encoding(commands.Cog, name="Encoding"):
     async def to_morse(self, ctx: commands.Context, *, text: str):
         """Convert text to Morse code.
 
-        Usage: -tomorse <text>
+        Usage: .tomorse <text>
         """
         result = " ".join(MORSE_CODE.get(c.upper(), "?") for c in text)
         await ctx.send(embed=self._embed("Text to Morse", text, result))
@@ -198,7 +202,7 @@ class Encoding(commands.Cog, name="Encoding"):
     async def from_morse(self, ctx: commands.Context, *, text: str):
         """Convert Morse code back to text.
 
-        Usage: -frommorse .... . .-.. .-.. ---
+        Usage: .frommorse .... . .-.. .-.. ---
         Use / for spaces between words.
         """
         result = "".join(MORSE_REVERSE.get(code, "?") for code in text.split())
@@ -208,22 +212,17 @@ class Encoding(commands.Cog, name="Encoding"):
     async def string_analysis(self, ctx: commands.Context, *, text: str):
         """Analyze a string: length, char types, entropy, and detect encoding.
 
-        Usage: -analyze <text>
+        Usage: .analyze <text>
         """
-        import math
-        import collections
-
         length = len(text)
         alpha = sum(c.isalpha() for c in text)
         digits = sum(c.isdigit() for c in text)
         spaces = sum(c.isspace() for c in text)
         special = length - alpha - digits - spaces
 
-        # Shannon entropy
         freq = collections.Counter(text)
         entropy = -sum((count / length) * math.log2(count / length) for count in freq.values())
 
-        # Detect likely encodings
         guesses = []
         if all(c in "0123456789abcdefABCDEF " for c in text.replace("0x", "")):
             guesses.append("Hex")
@@ -252,5 +251,7 @@ class Encoding(commands.Cog, name="Encoding"):
         )
         embed.add_field(name="Preview", value=f"```{text[:300]}```", inline=False)
         await ctx.send(embed=embed)
+
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(Encoding(bot))

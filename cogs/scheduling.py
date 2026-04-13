@@ -1,13 +1,14 @@
 """
 Scheduling cog for DayZero Bot.
 
-Provides scheduled announcements, one-off reminders, and recurring
-messages. Schedules persist across restarts via a JSON file.
+Provides scheduled announcements with channel targeting, one-off reminders,
+and recurring messages. Schedules persist across restarts via CSV.
 """
 
 import asyncio
+import csv
 import json
-import os
+import re
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -16,21 +17,46 @@ import discord
 from discord.ext import commands, tasks
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-SCHEDULES_FILE = DATA_DIR / "schedules.json"
+SCHEDULES_FILE = DATA_DIR / "schedules.csv"
 REMINDERS_FILE = DATA_DIR / "reminders.json"
+
+SCHEDULE_FIELDS = [
+    "id", "channel_id", "guild_id", "author", "author_id",
+    "title", "message", "fire_at", "recurring", "created_at",
+]
+
+
+def _load_schedules() -> list[dict]:
+    if SCHEDULES_FILE.exists():
+        with open(SCHEDULES_FILE, "r", encoding="utf-8") as f:
+            return list(csv.DictReader(f))
+    return []
+
+
+def _save_schedules(schedules: list[dict]):
+    DATA_DIR.mkdir(exist_ok=True)
+    with open(SCHEDULES_FILE, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=SCHEDULE_FIELDS)
+        writer.writeheader()
+        for s in schedules:
+            writer.writerow({k: s.get(k, "") for k in SCHEDULE_FIELDS})
+
+
 def _load_json(path: Path) -> list:
     if path.exists():
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
     return []
+
+
 def _save_json(path: Path, data: list):
     DATA_DIR.mkdir(exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, default=str)
+
+
 def _parse_duration(text: str) -> timedelta | None:
     """Parse a human-friendly duration like '2h30m', '45m', '1d', '90s'."""
-    import re
-
     total_seconds = 0
     pattern = re.compile(r"(\d+)\s*([dhms])", re.IGNORECASE)
     matches = pattern.findall(text)
@@ -47,6 +73,8 @@ def _parse_duration(text: str) -> timedelta | None:
         elif unit.lower() == "s":
             total_seconds += value
     return timedelta(seconds=total_seconds) if total_seconds > 0 else None
+
+
 class Scheduling(commands.Cog, name="Scheduling"):
     """Schedule announcements, reminders, and recurring messages."""
 
@@ -63,38 +91,35 @@ class Scheduling(commands.Cog, name="Scheduling"):
 
     @tasks.loop(seconds=30)
     async def check_schedules(self):
-        """Check for scheduled announcements that are due."""
-        schedules = _load_json(SCHEDULES_FILE)
+        schedules = _load_schedules()
         now = datetime.now(timezone.utc)
         remaining = []
         for sched in schedules:
             fire_at = datetime.fromisoformat(sched["fire_at"])
             if now >= fire_at:
-                channel = self.bot.get_channel(sched["channel_id"])
+                channel = self.bot.get_channel(int(sched["channel_id"]))
                 if channel:
                     embed = discord.Embed(
-                        title=sched.get("title", "Scheduled Announcement"),
+                        title=sched.get("title") or "Scheduled Announcement",
                         description=sched["message"],
                         color=0x3498DB,
                     )
-                    embed.set_footer(text=f"Scheduled by user {sched['author']}")
+                    embed.set_footer(text=f"Scheduled by {sched['author']}")
                     try:
                         await channel.send(embed=embed)
                     except discord.Forbidden:
                         pass
 
-                # Handle recurring
                 if sched.get("recurring"):
                     delta = _parse_duration(sched["recurring"])
                     if delta:
                         sched["fire_at"] = (fire_at + delta).isoformat()
                         remaining.append(sched)
-                # Non-recurring: just drop it
             else:
                 remaining.append(sched)
 
         if len(remaining) != len(schedules):
-            _save_json(SCHEDULES_FILE, remaining)
+            _save_schedules(remaining)
 
     @check_schedules.before_loop
     async def before_check_schedules(self):
@@ -102,7 +127,6 @@ class Scheduling(commands.Cog, name="Scheduling"):
 
     @tasks.loop(seconds=15)
     async def check_reminders(self):
-        """Check for personal reminders that are due."""
         reminders = _load_json(REMINDERS_FILE)
         now = datetime.now(timezone.utc)
         remaining = []
@@ -129,14 +153,13 @@ class Scheduling(commands.Cog, name="Scheduling"):
 
     @commands.command(name="schedule", aliases=["announce"])
     @commands.has_permissions(manage_messages=True)
-    async def schedule_announcement(self, ctx: commands.Context, delay: str, *, message: str):
-        """Schedule an announcement to be sent after a delay.
+    async def schedule_announcement(self, ctx: commands.Context, delay: str, channel: discord.TextChannel, *, message: str):
+        """Schedule an announcement to be sent in a specific channel after a delay.
 
-        Usage: -schedule <delay> <message>
+        Usage: .schedule <delay> <#channel> <message>
         Delay format: 30m, 2h, 1d, 1h30m, etc.
-        The announcement will be sent in the current channel.
 
-        Example: -schedule 2h Server maintenance in 2 hours!
+        Example: .schedule 2h #announcements Server maintenance in 2 hours!
         """
         delta = _parse_duration(delay)
         if not delta:
@@ -146,35 +169,35 @@ class Scheduling(commands.Cog, name="Scheduling"):
         fire_at = datetime.now(timezone.utc) + delta
         sched_id = str(uuid.uuid4())[:8]
 
-        schedules = _load_json(SCHEDULES_FILE)
+        schedules = _load_schedules()
         schedules.append({
             "id": sched_id,
-            "channel_id": ctx.channel.id,
-            "guild_id": ctx.guild.id,
+            "channel_id": str(channel.id),
+            "guild_id": str(ctx.guild.id),
             "author": str(ctx.author),
-            "author_id": ctx.author.id,
+            "author_id": str(ctx.author.id),
             "message": message,
             "title": "Announcement",
             "fire_at": fire_at.isoformat(),
-            "recurring": None,
+            "recurring": "",
             "created_at": datetime.now(timezone.utc).isoformat(),
         })
-        _save_json(SCHEDULES_FILE, schedules)
+        _save_schedules(schedules)
 
         embed = discord.Embed(title="Announcement Scheduled", color=0x2ECC71)
         embed.add_field(name="ID", value=f"`{sched_id}`")
-        embed.add_field(name="Channel", value=ctx.channel.mention)
+        embed.add_field(name="Channel", value=channel.mention)
         embed.add_field(name="Fires At", value=f"<t:{int(fire_at.timestamp())}:F>")
         embed.add_field(name="Message", value=message[:200], inline=False)
         await ctx.send(embed=embed)
 
     @commands.command(name="scheduletitled", aliases=["announcetitled"])
     @commands.has_permissions(manage_messages=True)
-    async def schedule_titled(self, ctx: commands.Context, delay: str, title: str, *, message: str):
-        """Schedule an announcement with a custom title.
+    async def schedule_titled(self, ctx: commands.Context, delay: str, channel: discord.TextChannel, title: str, *, message: str):
+        """Schedule an announcement with a custom title in a specific channel.
 
-        Usage: -scheduletitled <delay> "<title>" <message>
-        Example: -scheduletitled 1h "Maintenance" Servers going down at midnight.
+        Usage: .scheduletitled <delay> <#channel> "<title>" <message>
+        Example: .scheduletitled 1h #general "Maintenance" Servers going down at midnight.
         """
         delta = _parse_duration(delay)
         if not delta:
@@ -184,38 +207,39 @@ class Scheduling(commands.Cog, name="Scheduling"):
         fire_at = datetime.now(timezone.utc) + delta
         sched_id = str(uuid.uuid4())[:8]
 
-        schedules = _load_json(SCHEDULES_FILE)
+        schedules = _load_schedules()
         schedules.append({
             "id": sched_id,
-            "channel_id": ctx.channel.id,
-            "guild_id": ctx.guild.id,
+            "channel_id": str(channel.id),
+            "guild_id": str(ctx.guild.id),
             "author": str(ctx.author),
-            "author_id": ctx.author.id,
+            "author_id": str(ctx.author.id),
             "message": message,
             "title": title,
             "fire_at": fire_at.isoformat(),
-            "recurring": None,
+            "recurring": "",
             "created_at": datetime.now(timezone.utc).isoformat(),
         })
-        _save_json(SCHEDULES_FILE, schedules)
+        _save_schedules(schedules)
 
         embed = discord.Embed(title="Announcement Scheduled", color=0x2ECC71)
         embed.add_field(name="ID", value=f"`{sched_id}`")
         embed.add_field(name="Title", value=title)
+        embed.add_field(name="Channel", value=channel.mention)
         embed.add_field(name="Fires At", value=f"<t:{int(fire_at.timestamp())}:F>")
         embed.add_field(name="Message", value=message[:200], inline=False)
         await ctx.send(embed=embed)
 
     @commands.command(name="recurring", aliases=["repeat"])
     @commands.has_permissions(manage_messages=True)
-    async def recurring_announcement(self, ctx: commands.Context, interval: str, *, message: str):
-        """Schedule a recurring announcement.
+    async def recurring_announcement(self, ctx: commands.Context, interval: str, channel: discord.TextChannel, *, message: str):
+        """Schedule a recurring announcement in a specific channel.
 
-        Usage: -recurring <interval> <message>
+        Usage: .recurring <interval> <#channel> <message>
         Interval format: 1h, 6h, 1d, 12h, etc.
         First delivery happens after one interval.
 
-        Example: -recurring 24h Don't forget to check the CTF scoreboard!
+        Example: .recurring 24h #ctf-updates Don't forget to check the CTF scoreboard!
         """
         delta = _parse_duration(interval)
         if not delta:
@@ -228,23 +252,24 @@ class Scheduling(commands.Cog, name="Scheduling"):
         fire_at = datetime.now(timezone.utc) + delta
         sched_id = str(uuid.uuid4())[:8]
 
-        schedules = _load_json(SCHEDULES_FILE)
+        schedules = _load_schedules()
         schedules.append({
             "id": sched_id,
-            "channel_id": ctx.channel.id,
-            "guild_id": ctx.guild.id,
+            "channel_id": str(channel.id),
+            "guild_id": str(ctx.guild.id),
             "author": str(ctx.author),
-            "author_id": ctx.author.id,
+            "author_id": str(ctx.author.id),
             "message": message,
             "title": "Recurring Announcement",
             "fire_at": fire_at.isoformat(),
             "recurring": interval,
             "created_at": datetime.now(timezone.utc).isoformat(),
         })
-        _save_json(SCHEDULES_FILE, schedules)
+        _save_schedules(schedules)
 
         embed = discord.Embed(title="Recurring Announcement Scheduled", color=0x9B59B6)
         embed.add_field(name="ID", value=f"`{sched_id}`")
+        embed.add_field(name="Channel", value=channel.mention)
         embed.add_field(name="Interval", value=interval)
         embed.add_field(name="Next Fire", value=f"<t:{int(fire_at.timestamp())}:F>")
         embed.add_field(name="Message", value=message[:200], inline=False)
@@ -255,10 +280,10 @@ class Scheduling(commands.Cog, name="Scheduling"):
     async def list_schedules(self, ctx: commands.Context):
         """List all scheduled announcements for this server.
 
-        Usage: -schedules
+        Usage: .schedules
         """
-        schedules = _load_json(SCHEDULES_FILE)
-        guild_schedules = [s for s in schedules if s.get("guild_id") == ctx.guild.id]
+        schedules = _load_schedules()
+        guild_schedules = [s for s in schedules if s.get("guild_id") == str(ctx.guild.id)]
 
         if not guild_schedules:
             await ctx.send("No scheduled announcements.")
@@ -269,7 +294,7 @@ class Scheduling(commands.Cog, name="Scheduling"):
             fire_at = datetime.fromisoformat(s["fire_at"])
             recurring = f" (every {s['recurring']})" if s.get("recurring") else ""
             embed.add_field(
-                name=f"`{s['id']}` — {s.get('title', 'Announcement')}{recurring}",
+                name=f"`{s['id']}` — {s.get('title') or 'Announcement'}{recurring}",
                 value=f"<t:{int(fire_at.timestamp())}:R> in <#{s['channel_id']}>\n{s['message'][:100]}",
                 inline=False,
             )
@@ -280,22 +305,22 @@ class Scheduling(commands.Cog, name="Scheduling"):
     async def cancel_schedule(self, ctx: commands.Context, schedule_id: str):
         """Cancel a scheduled announcement by its ID.
 
-        Usage: -cancelschedule <id>
+        Usage: .cancelschedule <id>
         """
-        schedules = _load_json(SCHEDULES_FILE)
+        schedules = _load_schedules()
         new_schedules = [s for s in schedules if s["id"] != schedule_id]
         if len(new_schedules) == len(schedules):
             await ctx.send(f"No schedule found with ID `{schedule_id}`.")
             return
-        _save_json(SCHEDULES_FILE, new_schedules)
+        _save_schedules(new_schedules)
         await ctx.send(f"Cancelled schedule `{schedule_id}`.")
 
     @commands.command(name="remind", aliases=["remindme", "reminder"])
     async def set_reminder(self, ctx: commands.Context, delay: str, *, message: str):
         """Set a personal reminder.
 
-        Usage: -remind <delay> <message>
-        Example: -remind 30m Check on the CTF challenge
+        Usage: .remind <delay> <message>
+        Example: .remind 30m Check on the CTF challenge
         """
         delta = _parse_duration(delay)
         if not delta:
@@ -321,7 +346,7 @@ class Scheduling(commands.Cog, name="Scheduling"):
     async def list_reminders(self, ctx: commands.Context):
         """List your pending reminders.
 
-        Usage: -reminders
+        Usage: .reminders
         """
         reminders = _load_json(REMINDERS_FILE)
         mine = [r for r in reminders if r["user_id"] == ctx.author.id]
@@ -344,7 +369,7 @@ class Scheduling(commands.Cog, name="Scheduling"):
     async def cancel_reminder(self, ctx: commands.Context, reminder_id: str):
         """Cancel a personal reminder by its ID.
 
-        Usage: -cancelreminder <id>
+        Usage: .cancelreminder <id>
         """
         reminders = _load_json(REMINDERS_FILE)
         new_reminders = [r for r in reminders if not (r["id"] == reminder_id and r["user_id"] == ctx.author.id)]
@@ -353,5 +378,7 @@ class Scheduling(commands.Cog, name="Scheduling"):
             return
         _save_json(REMINDERS_FILE, new_reminders)
         await ctx.send(f"Cancelled reminder `{reminder_id}`.")
+
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(Scheduling(bot))

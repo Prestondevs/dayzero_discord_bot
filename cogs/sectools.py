@@ -1,11 +1,12 @@
 """
-Cybersecurity tools cog for DayZero Bot.
+Security tools cog for DayZero Bot.
 
 Provides IP/domain lookup, DNS records, CVE search, hash generation,
 password strength analysis, subnet calculation, HTTP header inspection,
-port reference, and reverse DNS.
+port reference, reverse DNS, and WHOIS lookups.
 """
 
+import asyncio
 import hashlib
 import ipaddress
 import math
@@ -16,8 +17,10 @@ import string
 import aiohttp
 import discord
 from discord.ext import commands
-class CyberSecurity(commands.Cog, name="Cybersecurity"):
-    """Cybersecurity reconnaissance and utility commands."""
+
+
+class SecurityTools(commands.Cog, name="Security Tools"):
+    """Network reconnaissance and security utility commands."""
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -35,7 +38,7 @@ class CyberSecurity(commands.Cog, name="Cybersecurity"):
     async def ip_lookup(self, ctx: commands.Context, target: str):
         """Look up geolocation and network info for an IP or domain.
 
-        Usage: -iplookup <ip_or_domain>
+        Usage: .iplookup <ip_or_domain>
         """
         url = f"http://ip-api.com/json/{target}?fields=status,message,country,regionName,city,zip,lat,lon,timezone,isp,org,as,query"
         async with self.session.get(url) as resp:
@@ -63,7 +66,7 @@ class CyberSecurity(commands.Cog, name="Cybersecurity"):
     async def dns_lookup(self, ctx: commands.Context, domain: str, record_type: str = "A"):
         """Query DNS records for a domain using a public DNS-over-HTTPS resolver.
 
-        Usage: -dns <domain> [record_type]
+        Usage: .dns <domain> [record_type]
         Supported types: A, AAAA, MX, TXT, NS, CNAME, SOA
         """
         record_type = record_type.upper()
@@ -95,7 +98,7 @@ class CyberSecurity(commands.Cog, name="Cybersecurity"):
     async def reverse_dns(self, ctx: commands.Context, ip: str):
         """Perform a reverse DNS lookup on an IP address.
 
-        Usage: -rdns <ip_address>
+        Usage: .rdns <ip_address>
         """
         try:
             host, _, _ = socket.gethostbyaddr(ip)
@@ -110,7 +113,7 @@ class CyberSecurity(commands.Cog, name="Cybersecurity"):
     async def http_headers(self, ctx: commands.Context, url: str):
         """Inspect HTTP response headers from a URL (security header audit).
 
-        Usage: -headers <url>
+        Usage: .headers <url>
         """
         if not url.startswith(("http://", "https://")):
             url = "https://" + url
@@ -136,13 +139,12 @@ class CyberSecurity(commands.Cog, name="Cybersecurity"):
         embed = discord.Embed(title=f"HTTP Headers: {url}", color=0xE74C3C)
         for name, value in security_headers.items():
             status = value if value else "**MISSING**"
-            # Truncate long values
             if value and len(value) > 200:
                 status = value[:200] + "..."
             embed.add_field(name=name, value=f"`{status}`", inline=False)
 
         present = sum(1 for v in security_headers.values() if v and v != headers.get("Server"))
-        total = len(security_headers) - 1  # exclude Server from score
+        total = len(security_headers) - 1
         embed.set_footer(text=f"Security headers present: {present}/{total}")
         await ctx.send(embed=embed)
 
@@ -151,7 +153,7 @@ class CyberSecurity(commands.Cog, name="Cybersecurity"):
     async def cve_lookup(self, ctx: commands.Context, cve_id: str):
         """Look up a CVE by its ID.
 
-        Usage: -cve CVE-2024-1234
+        Usage: .cve CVE-2024-1234
         """
         cve_id = cve_id.upper()
         if not re.match(r"^CVE-\d{4}-\d{4,}$", cve_id):
@@ -175,7 +177,6 @@ class CyberSecurity(commands.Cog, name="Cybersecurity"):
         if len(desc) > 800:
             desc = desc[:800] + "..."
 
-        # Extract CVSS if available
         metrics = cna.get("metrics", [])
         cvss_text = "N/A"
         for m in metrics:
@@ -205,7 +206,7 @@ class CyberSecurity(commands.Cog, name="Cybersecurity"):
     async def hash_text(self, ctx: commands.Context, algorithm: str, *, text: str):
         """Generate a hash of the given text.
 
-        Usage: -hash <algorithm> <text>
+        Usage: .hash <algorithm> <text>
         Algorithms: md5, sha1, sha256, sha512
         """
         algorithm = algorithm.lower()
@@ -224,9 +225,8 @@ class CyberSecurity(commands.Cog, name="Cybersecurity"):
     async def password_check(self, ctx: commands.Context, *, password: str):
         """Analyze password strength (the message is deleted for privacy).
 
-        Usage: -password <your_password>
+        Usage: .password <your_password>
         """
-        # Delete the invoking message so the password isn't left in chat
         try:
             await ctx.message.delete()
         except discord.Forbidden:
@@ -238,7 +238,6 @@ class CyberSecurity(commands.Cog, name="Cybersecurity"):
         has_digit = bool(re.search(r"\d", password))
         has_special = bool(re.search(r"[^A-Za-z0-9]", password))
 
-        # Calculate entropy
         pool = 0
         if has_lower:
             pool += 26
@@ -250,7 +249,6 @@ class CyberSecurity(commands.Cog, name="Cybersecurity"):
             pool += len(string.punctuation)
         entropy = length * math.log2(pool) if pool else 0
 
-        # Common patterns
         issues = []
         if length < 8:
             issues.append("Too short (< 8 chars)")
@@ -267,7 +265,6 @@ class CyberSecurity(commands.Cog, name="Cybersecurity"):
         if re.search(r"(012|123|234|345|456|567|678|789|abc|bcd|cde|def)", password.lower()):
             issues.append("Contains sequential characters")
 
-        # Rating
         if entropy >= 60 and not issues:
             rating, color = "Strong", 0x2ECC71
         elif entropy >= 40 and len(issues) <= 2:
@@ -294,7 +291,7 @@ class CyberSecurity(commands.Cog, name="Cybersecurity"):
     async def subnet_calc(self, ctx: commands.Context, cidr: str):
         """Calculate subnet information from CIDR notation.
 
-        Usage: -subnet 192.168.1.0/24
+        Usage: .subnet 192.168.1.0/24
         """
         try:
             net = ipaddress.ip_network(cidr, strict=False)
@@ -311,7 +308,6 @@ class CyberSecurity(commands.Cog, name="Cybersecurity"):
         embed.add_field(name="Total Hosts", value=f"{net.num_addresses:,}")
         embed.add_field(name="Usable Hosts", value=f"{max(net.num_addresses - 2, 0):,}")
         embed.add_field(name="Is Private", value=str(net.is_private))
-        # Show first/last usable host
         hosts = list(net.hosts())
         if hosts:
             embed.add_field(name="Host Range", value=f"`{hosts[0]}` - `{hosts[-1]}`")
@@ -321,7 +317,7 @@ class CyberSecurity(commands.Cog, name="Cybersecurity"):
     async def port_info(self, ctx: commands.Context, port: int = None):
         """Look up common port numbers or show info for a specific port.
 
-        Usage: -port [port_number]
+        Usage: .port [port_number]
         """
         port_db = {
             20: ("FTP Data", "File Transfer Protocol - Data"),
@@ -377,9 +373,7 @@ class CyberSecurity(commands.Cog, name="Cybersecurity"):
             await ctx.send(embed=embed)
             return
 
-        # Show all common ports
         lines = [f"`{p:>5}` | **{info[0]}** - {info[1]}" for p, info in sorted(port_db.items())]
-        # Split into chunks to fit embed limits
         chunk_size = 20
         for i in range(0, len(lines), chunk_size):
             embed = discord.Embed(
@@ -394,7 +388,7 @@ class CyberSecurity(commands.Cog, name="Cybersecurity"):
     async def whois_lookup(self, ctx: commands.Context, domain: str):
         """Get WHOIS information for a domain.
 
-        Usage: -whois example.com
+        Usage: .whois example.com
         """
         url = f"https://da.gd/w/{domain}"
         async with self.session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
@@ -404,7 +398,6 @@ class CyberSecurity(commands.Cog, name="Cybersecurity"):
             await ctx.send(f"No WHOIS data found for `{domain}`.")
             return
 
-        # Truncate if too long
         if len(text) > 3900:
             text = text[:3900] + "\n... (truncated)"
 
@@ -416,7 +409,7 @@ class CyberSecurity(commands.Cog, name="Cybersecurity"):
     async def port_check(self, ctx: commands.Context, host: str, port: int):
         """Check if a specific port is open on a host (TCP connect test).
 
-        Usage: -portcheck <host> <port>
+        Usage: .portcheck <host> <port>
         Note: Only works on hosts that allow connections.
         """
         if port < 1 or port > 65535:
@@ -438,5 +431,7 @@ class CyberSecurity(commands.Cog, name="Cybersecurity"):
         embed = discord.Embed(title=f"Port Check: {host}:{port}", color=color)
         embed.add_field(name="Status", value=f"**{status}**")
         await ctx.send(embed=embed)
+
+
 async def setup(bot: commands.Bot):
-    await bot.add_cog(CyberSecurity(bot))
+    await bot.add_cog(SecurityTools(bot))
