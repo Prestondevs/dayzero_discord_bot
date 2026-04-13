@@ -84,7 +84,7 @@ class HelpCog(commands.Cog, name="Help"):
                 cmd_list.append(f"`{prefix}{cmd.name}` — {brief}")
 
             embed.add_field(
-                name=f"--- {cog_name} ---",
+                name=cog_name,
                 value="\n".join(cmd_list),
                 inline=False,
             )
@@ -97,7 +97,7 @@ class HelpCog(commands.Cog, name="Help"):
             if not cmds:
                 continue
             cmd_list = [f"`{prefix}{cmd.name}` — {cmd.short_doc or 'No description'}" for cmd in cmds]
-            embed.add_field(name=f"--- {cog_name} ---", value="\n".join(cmd_list), inline=False)
+            embed.add_field(name=cog_name, value="\n".join(cmd_list), inline=False)
 
         embed.set_footer(text="DayZero Cybersecurity Club")
         await ctx.send(embed=embed)

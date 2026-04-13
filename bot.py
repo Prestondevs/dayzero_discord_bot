@@ -20,7 +20,7 @@ TOKEN = os.getenv("TOKEN")
 if not TOKEN:
     raise RuntimeError("TOKEN environment variable is not set. Set TOKEN in .env before running the bot.")
 
-PREFIX = os.getenv("PREFIX", "-")
+PREFIX = os.getenv("PREFIX", ".")
 
 logging.basicConfig(
     level=logging.INFO,
