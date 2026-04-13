@@ -160,10 +160,16 @@ class Scheduling(commands.Cog, name="Scheduling"):
         Delay format: 30m, 2h, 1d, 1h30m, etc.
 
         Example: .schedule 2h #announcements Server maintenance in 2 hours!
+        Example: .schedule 1d #general Tomorrow's meeting is cancelled.
         """
         delta = _parse_duration(delay)
         if not delta:
-            await ctx.send("Invalid duration. Use formats like `30m`, `2h`, `1d`, `1h30m`.")
+            await ctx.send(
+                "Invalid duration format. Use a combination of:\n"
+                "- `s` for seconds, `m` for minutes, `h` for hours, `d` for days\n"
+                "- Examples: `30m`, `2h`, `1d`, `1h30m`\n"
+                f"Run `{ctx.prefix}help schedule` for full usage."
+            )
             return
 
         fire_at = datetime.now(timezone.utc) + delta
@@ -198,10 +204,15 @@ class Scheduling(commands.Cog, name="Scheduling"):
 
         Usage: .scheduletitled <delay> <#channel> "<title>" <message>
         Example: .scheduletitled 1h #general "Maintenance" Servers going down at midnight.
+        Example: .scheduletitled 30m #announcements "CTF Reminder" Don't forget to register!
         """
         delta = _parse_duration(delay)
         if not delta:
-            await ctx.send("Invalid duration. Use formats like `30m`, `2h`, `1d`, `1h30m`.")
+            await ctx.send(
+                "Invalid duration format. Use a combination of:\n"
+                "- `s` for seconds, `m` for minutes, `h` for hours, `d` for days\n"
+                f"Run `{ctx.prefix}help scheduletitled` for full usage."
+            )
             return
 
         fire_at = datetime.now(timezone.utc) + delta
@@ -237,13 +248,18 @@ class Scheduling(commands.Cog, name="Scheduling"):
 
         Usage: .recurring <interval> <#channel> <message>
         Interval format: 1h, 6h, 1d, 12h, etc.
-        First delivery happens after one interval.
+        First delivery happens after one interval. Minimum: 10 minutes.
 
         Example: .recurring 24h #ctf-updates Don't forget to check the CTF scoreboard!
+        Example: .recurring 12h #general Good morning / Good evening!
         """
         delta = _parse_duration(interval)
         if not delta:
-            await ctx.send("Invalid interval. Use formats like `1h`, `6h`, `1d`.")
+            await ctx.send(
+                "Invalid interval format. Use a combination of:\n"
+                "- `s` for seconds, `m` for minutes, `h` for hours, `d` for days\n"
+                f"Run `{ctx.prefix}help recurring` for full usage."
+            )
             return
         if delta < timedelta(minutes=10):
             await ctx.send("Minimum recurring interval is 10 minutes.")
@@ -317,14 +333,19 @@ class Scheduling(commands.Cog, name="Scheduling"):
 
     @commands.command(name="remind", aliases=["remindme", "reminder"])
     async def set_reminder(self, ctx: commands.Context, delay: str, *, message: str):
-        """Set a personal reminder.
+        """Set a personal reminder. The bot will ping you when the time is up.
 
         Usage: .remind <delay> <message>
         Example: .remind 30m Check on the CTF challenge
+        Example: .remind 2h Submit the writeup
         """
         delta = _parse_duration(delay)
         if not delta:
-            await ctx.send("Invalid duration. Use formats like `30m`, `2h`, `1d`.")
+            await ctx.send(
+                "Invalid duration format. Use a combination of:\n"
+                "- `s` for seconds, `m` for minutes, `h` for hours, `d` for days\n"
+                f"Run `{ctx.prefix}help remind` for full usage."
+            )
             return
 
         fire_at = datetime.now(timezone.utc) + delta

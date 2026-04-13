@@ -177,9 +177,11 @@ class CTFTime(commands.Cog, name="CTFTime"):
     @commands.command(name="setctftimechannel")
     @commands.has_permissions(administrator=True)
     async def set_ctftime_channel(self, ctx: commands.Context, channel: discord.TextChannel):
-        """Set the channel for CTFTime competition updates.
+        """Set the channel where CTFTime competition updates are automatically posted.
+        The bot checks for new CTF events every hour and posts them.
 
-        Usage: .setctftimechannel #channel
+        Usage: .setctftimechannel <#channel>
+        Example: .setctftimechannel #ctf-events
         """
         channels = _load_channels()
         channels[ctx.guild.id] = channel.id
@@ -204,7 +206,9 @@ class CTFTime(commands.Cog, name="CTFTime"):
     @commands.command(name="ctftime", aliases=["ctf", "ctfs"])
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def upcoming_ctfs(self, ctx: commands.Context):
-        """Show upcoming CTF competitions from CTFTime.
+        """Show upcoming CTF competitions from CTFTime (next 7 days).
+        This is a manual lookup — for automatic updates, an admin can
+        use .setctftimechannel to configure hourly posts.
 
         Usage: .ctftime
         """

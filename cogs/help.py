@@ -31,6 +31,25 @@ CATEGORY_ORDER = [
 ]
 
 
+def _get_permission_label(cmd: commands.Command) -> str | None:
+    """Extract the required user permission from a command's checks."""
+    for check in cmd.checks:
+        if hasattr(check, "__qualname__") and "has_permissions" in check.__qualname__:
+            # Pull the permission dict from the check's closure
+            closure = check.__closure__
+            if closure:
+                for cell in closure:
+                    try:
+                        val = cell.cell_contents
+                        if isinstance(val, dict):
+                            perms = [k.replace("_", " ").title() for k, v in val.items() if v]
+                            if perms:
+                                return ", ".join(perms)
+                    except ValueError:
+                        continue
+    return None
+
+
 class HelpCog(commands.Cog, name="Help"):
     """Custom help command with categorized embeds."""
 
@@ -42,6 +61,7 @@ class HelpCog(commands.Cog, name="Help"):
         """Show the help menu or details for a specific command.
 
         Usage: .help [command_name]
+        Example: .help kick
         """
         prefix = ctx.prefix
 
@@ -51,27 +71,95 @@ class HelpCog(commands.Cog, name="Help"):
                 await ctx.send(f"Unknown command: `{command_name}`. Use `{prefix}help` to see all commands.")
                 return
 
+            # Build detailed help embed
             embed = discord.Embed(
                 title=f"{prefix}{cmd.qualified_name}",
-                description=cmd.help or "No description.",
                 color=0x00FF88,
             )
+
+            # Split docstring into description and fields
+            doc = cmd.help or "No description available."
+            lines = doc.strip().split("\n")
+
+            description_lines = []
+            usage_lines = []
+            example_lines = []
+
+            section = "desc"
+            for line in lines:
+                stripped = line.strip()
+                if stripped.lower().startswith("usage:"):
+                    section = "usage"
+                    usage_lines.append(stripped.replace("Usage:", "").replace("usage:", "").strip())
+                elif stripped.lower().startswith("example:"):
+                    section = "example"
+                    example_lines.append(stripped.replace("Example:", "").replace("example:", "").strip())
+                elif section == "usage":
+                    if stripped.lower().startswith("example:"):
+                        section = "example"
+                        example_lines.append(stripped.replace("Example:", "").replace("example:", "").strip())
+                    elif stripped:
+                        usage_lines.append(stripped)
+                    else:
+                        section = "desc"
+                elif section == "example":
+                    if stripped:
+                        example_lines.append(stripped)
+                    else:
+                        section = "desc"
+                else:
+                    description_lines.append(stripped)
+
+            # Clean up description
+            desc_text = "\n".join(description_lines).strip()
+            if desc_text:
+                embed.description = desc_text
+
+            if usage_lines:
+                embed.add_field(
+                    name="Usage",
+                    value="\n".join(f"`{u}`" for u in usage_lines),
+                    inline=False,
+                )
+
+            if example_lines:
+                embed.add_field(
+                    name="Examples",
+                    value="\n".join(f"`{e}`" for e in example_lines),
+                    inline=False,
+                )
+
             if cmd.aliases:
                 embed.add_field(
                     name="Aliases",
                     value=" ".join(f"`{prefix}{a}`" for a in cmd.aliases),
                     inline=False,
                 )
+
+            # Permission info
+            perm = _get_permission_label(cmd)
+            if perm:
+                embed.add_field(name="Requires", value=f"`{perm}`", inline=False)
+
+            # Category
+            if cmd.cog:
+                embed.add_field(name="Category", value=cmd.cog.qualified_name, inline=True)
+
             if isinstance(cmd, commands.Group):
                 subs = " ".join(f"`{sub.name}`" for sub in cmd.commands)
                 embed.add_field(name="Subcommands", value=subs or "None", inline=False)
 
+            embed.set_footer(text=f"Use {prefix}help to see all commands")
             await ctx.send(embed=embed)
             return
 
+        # Full help menu
         embed = discord.Embed(
             title="DayZero Bot",
-            description=f"Use `{prefix}help <command>` for details on any command.",
+            description=(
+                f"Use `{prefix}help <command>` for detailed info on any command.\n"
+                f"Commands marked with `*` require **Administrator**."
+            ),
             color=0x00FF88,
         )
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
@@ -90,7 +178,13 @@ class HelpCog(commands.Cog, name="Help"):
             icon = info.get("icon", "")
             desc = info.get("desc", "")
 
-            cmd_list = " ".join(f"`{cmd.name}`" for cmd in cmds)
+            cmd_entries = []
+            for cmd in cmds:
+                perm = _get_permission_label(cmd)
+                marker = "*" if perm and "administrator" in perm.lower() else ""
+                cmd_entries.append(f"`{cmd.name}`{marker}")
+
+            cmd_list = " ".join(cmd_entries)
             header = f"{icon} {cog_name}" if icon else cog_name
             value = f"*{desc}*\n{cmd_list}" if desc else cmd_list
 

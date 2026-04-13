@@ -151,9 +151,11 @@ class SecurityNews(commands.Cog, name="Security News"):
     @commands.command(name="setsecnewschannel")
     @commands.has_permissions(administrator=True)
     async def set_secnews_channel(self, ctx: commands.Context, channel: discord.TextChannel):
-        """Set the channel for cybersecurity news updates.
+        """Set the channel where cybersecurity news articles are automatically posted.
+        The bot checks The Hacker News RSS feed every hour for new articles.
 
-        Usage: .setsecnewschannel #channel
+        Usage: .setsecnewschannel <#channel>
+        Example: .setsecnewschannel #security-news
         """
         channels = _load_channels()
         channels[ctx.guild.id] = channel.id
@@ -178,7 +180,9 @@ class SecurityNews(commands.Cog, name="Security News"):
     @commands.command(name="secnews", aliases=["cybernews", "news"])
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def latest_news(self, ctx: commands.Context):
-        """Show the latest cybersecurity news.
+        """Show the latest cybersecurity news from The Hacker News.
+        This is a manual lookup — for automatic updates, an admin can
+        use .setsecnewschannel to configure hourly posts.
 
         Usage: .secnews
         """

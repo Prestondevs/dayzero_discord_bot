@@ -70,19 +70,41 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError):
     if isinstance(error, commands.CommandNotFound):
         return
     if isinstance(error, commands.MissingPermissions):
-        await ctx.send("You don't have permission to use that command.")
+        missing = ", ".join(error.missing_permissions)
+        await ctx.send(
+            f"You don't have permission to use `{PREFIX}{ctx.command}`. "
+            f"Required: **{missing}**."
+        )
         return
     if isinstance(error, commands.BotMissingPermissions):
-        await ctx.send("I don't have the required permissions to do that.")
+        missing = ", ".join(error.missing_permissions)
+        await ctx.send(
+            f"I'm missing permissions to do that: **{missing}**. "
+            f"Please check my role permissions."
+        )
         return
     if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send(f"Missing argument: `{error.param.name}`. Use `{PREFIX}help {ctx.command}` for usage info.")
+        await ctx.send(
+            f"Missing required argument: `{error.param.name}`.\n"
+            f"Run `{PREFIX}help {ctx.command}` to see the full usage."
+        )
         return
     if isinstance(error, commands.BadArgument):
-        await ctx.send(f"Invalid argument. Use `{PREFIX}help {ctx.command}` for usage info.")
+        await ctx.send(
+            f"Invalid argument provided.\n"
+            f"Run `{PREFIX}help {ctx.command}` to see the correct usage."
+        )
         return
     if isinstance(error, commands.CommandOnCooldown):
-        await ctx.send(f"Command on cooldown. Try again in {error.retry_after:.1f}s.")
+        await ctx.send(f"Command on cooldown. Try again in **{error.retry_after:.1f}s**.")
+        return
+    if isinstance(error, commands.NoPrivateMessage):
+        await ctx.send("This command can only be used in a server, not in DMs.")
+        return
+    if isinstance(error, commands.CheckFailure):
+        await ctx.send(
+            f"You don't have the required permissions to use `{PREFIX}{ctx.command}`."
+        )
         return
     log.error("Unhandled command error in %s: %s", ctx.command, error, exc_info=error)
     await ctx.send("An unexpected error occurred. Please try again later.")

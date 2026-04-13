@@ -27,7 +27,8 @@ class Moderation(commands.Cog, name="Moderation"):
     async def kick(self, ctx: commands.Context, member: discord.Member, *, reason: str = "No reason provided"):
         """Kick a member from the server.
 
-        Usage: .kick @user [reason]
+        Usage: .kick <@user> [reason]
+        Example: .kick @baduser Spamming in chat
         """
         if self._is_bot(member):
             await ctx.send("I can't kick myself.")
@@ -48,7 +49,8 @@ class Moderation(commands.Cog, name="Moderation"):
     async def ban(self, ctx: commands.Context, member: discord.Member, *, reason: str = "No reason provided"):
         """Ban a member from the server.
 
-        Usage: .ban @user [reason]
+        Usage: .ban <@user> [reason]
+        Example: .ban @baduser Repeated rule violations
         """
         if self._is_bot(member):
             await ctx.send("I can't ban myself.")
@@ -84,8 +86,10 @@ class Moderation(commands.Cog, name="Moderation"):
     async def mute(self, ctx: commands.Context, member: discord.Member, duration: int = 10, *, reason: str = "No reason provided"):
         """Timeout a member for a specified number of minutes.
 
-        Usage: .mute @user [minutes] [reason]
+        Usage: .mute <@user> [minutes] [reason]
         Default: 10 minutes. Max: 40320 (28 days).
+        Example: .mute @user 30 Being disruptive
+        Example: .mute @user (defaults to 10 min, no reason)
         """
         if self._is_bot(member):
             await ctx.send("I can't mute myself.")
@@ -125,6 +129,8 @@ class Moderation(commands.Cog, name="Moderation"):
         Usage: .purge <amount> [@user]
         If a user is specified, only their messages are deleted.
         Max: 200 messages.
+        Example: .purge 50
+        Example: .purge 20 @spammer
         """
         if amount < 1 or amount > 200:
             await ctx.send("Amount must be between 1 and 200.")
@@ -148,6 +154,8 @@ class Moderation(commands.Cog, name="Moderation"):
 
         Usage: .slowmode [seconds]
         Set to 0 to disable. Max: 21600 (6 hours).
+        Example: .slowmode 10
+        Example: .slowmode 0 (disables slowmode)
         """
         if seconds < 0 or seconds > 21600:
             await ctx.send("Slowmode must be between 0 and 21600 seconds.")
