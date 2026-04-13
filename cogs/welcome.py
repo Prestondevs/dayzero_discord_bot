@@ -104,7 +104,7 @@ class Welcome(commands.Cog, name="Welcome"):
                     pass
 
     @commands.group(name="welcome", invoke_without_command=True)
-    @commands.has_permissions(manage_guild=True)
+    @commands.has_permissions(administrator=True)
     async def welcome_group(self, ctx: commands.Context):
         """Configure welcome/leave messages. Use subcommands.
 
@@ -114,7 +114,7 @@ class Welcome(commands.Cog, name="Welcome"):
         await ctx.send_help(ctx.command)
 
     @welcome_group.command(name="channel")
-    @commands.has_permissions(manage_guild=True)
+    @commands.has_permissions(administrator=True)
     async def set_welcome_channel(self, ctx: commands.Context, channel: discord.TextChannel):
         """Set the channel for welcome messages.
 
@@ -124,7 +124,7 @@ class Welcome(commands.Cog, name="Welcome"):
         await ctx.send(f"Welcome channel set to {channel.mention}.")
 
     @welcome_group.command(name="leavechannel")
-    @commands.has_permissions(manage_guild=True)
+    @commands.has_permissions(administrator=True)
     async def set_leave_channel(self, ctx: commands.Context, channel: discord.TextChannel):
         """Set a separate channel for leave messages (defaults to welcome channel).
 
@@ -134,7 +134,7 @@ class Welcome(commands.Cog, name="Welcome"):
         await ctx.send(f"Leave channel set to {channel.mention}.")
 
     @welcome_group.command(name="message")
-    @commands.has_permissions(manage_guild=True)
+    @commands.has_permissions(administrator=True)
     async def set_welcome_message(self, ctx: commands.Context, *, message: str):
         """Set a custom welcome message.
 
@@ -145,7 +145,7 @@ class Welcome(commands.Cog, name="Welcome"):
         await ctx.send(f"Welcome message updated.\nPreview: {message}")
 
     @welcome_group.command(name="autorole")
-    @commands.has_permissions(manage_guild=True)
+    @commands.has_permissions(administrator=True)
     async def set_auto_role(self, ctx: commands.Context, role: discord.Role = None):
         """Set a role to auto-assign to new members (omit role to disable).
 
@@ -158,7 +158,7 @@ class Welcome(commands.Cog, name="Welcome"):
             await ctx.send("Auto-role disabled.")
 
     @welcome_group.command(name="dm")
-    @commands.has_permissions(manage_guild=True)
+    @commands.has_permissions(administrator=True)
     async def toggle_dm(self, ctx: commands.Context, enabled: bool):
         """Enable or disable DM on join.
 
@@ -168,7 +168,7 @@ class Welcome(commands.Cog, name="Welcome"):
         await ctx.send(f"DM on join: **{'enabled' if enabled else 'disabled'}**.")
 
     @welcome_group.command(name="status")
-    @commands.has_permissions(manage_guild=True)
+    @commands.has_permissions(administrator=True)
     async def welcome_status(self, ctx: commands.Context):
         """Show current welcome configuration.
 

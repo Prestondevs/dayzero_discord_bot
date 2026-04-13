@@ -149,7 +149,7 @@ class SecurityNews(commands.Cog, name="Security News"):
         await self.bot.wait_until_ready()
 
     @commands.command(name="setsecnewschannel")
-    @commands.has_permissions(manage_guild=True)
+    @commands.has_permissions(administrator=True)
     async def set_secnews_channel(self, ctx: commands.Context, channel: discord.TextChannel):
         """Set the channel for cybersecurity news updates.
 
@@ -161,7 +161,7 @@ class SecurityNews(commands.Cog, name="Security News"):
         await ctx.send(f"Security news will be posted in {channel.mention}.")
 
     @commands.command(name="removesecnewschannel")
-    @commands.has_permissions(manage_guild=True)
+    @commands.has_permissions(administrator=True)
     async def remove_secnews_channel(self, ctx: commands.Context):
         """Stop posting security news in this server.
 

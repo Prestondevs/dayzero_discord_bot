@@ -175,7 +175,7 @@ class CTFTime(commands.Cog, name="CTFTime"):
         return embed
 
     @commands.command(name="setctftimechannel")
-    @commands.has_permissions(manage_guild=True)
+    @commands.has_permissions(administrator=True)
     async def set_ctftime_channel(self, ctx: commands.Context, channel: discord.TextChannel):
         """Set the channel for CTFTime competition updates.
 
@@ -187,7 +187,7 @@ class CTFTime(commands.Cog, name="CTFTime"):
         await ctx.send(f"CTFTime updates will be posted in {channel.mention}.")
 
     @commands.command(name="removectftimechannel")
-    @commands.has_permissions(manage_guild=True)
+    @commands.has_permissions(administrator=True)
     async def remove_ctftime_channel(self, ctx: commands.Context):
         """Stop posting CTFTime updates in this server.
 

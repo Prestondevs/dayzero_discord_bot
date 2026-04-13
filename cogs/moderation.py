@@ -2,7 +2,8 @@
 Moderation cog for DayZero Bot.
 
 Provides kick, ban, unban, mute, unmute, purge, slowmode,
-channel lock/unlock, and an audit-log style mod-log.
+channel lock/unlock, warnings, and nickname changes.
+All commands require administrator permissions.
 """
 
 import datetime
@@ -12,19 +13,25 @@ from discord.ext import commands
 
 
 class Moderation(commands.Cog, name="Moderation"):
-    """Server moderation commands (requires appropriate permissions)."""
+    """Server moderation commands (administrator only)."""
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    def _is_bot(self, member: discord.Member) -> bool:
+        return member.id == self.bot.user.id
+
     @commands.command(name="kick")
-    @commands.has_permissions(kick_members=True)
+    @commands.has_permissions(administrator=True)
     @commands.bot_has_permissions(kick_members=True)
     async def kick(self, ctx: commands.Context, member: discord.Member, *, reason: str = "No reason provided"):
         """Kick a member from the server.
 
         Usage: .kick @user [reason]
         """
+        if self._is_bot(member):
+            await ctx.send("I can't kick myself.")
+            return
         if member.top_role >= ctx.author.top_role:
             await ctx.send("You cannot kick someone with an equal or higher role.")
             return
@@ -36,13 +43,16 @@ class Moderation(commands.Cog, name="Moderation"):
         await ctx.send(embed=embed)
 
     @commands.command(name="ban")
-    @commands.has_permissions(ban_members=True)
+    @commands.has_permissions(administrator=True)
     @commands.bot_has_permissions(ban_members=True)
     async def ban(self, ctx: commands.Context, member: discord.Member, *, reason: str = "No reason provided"):
         """Ban a member from the server.
 
         Usage: .ban @user [reason]
         """
+        if self._is_bot(member):
+            await ctx.send("I can't ban myself.")
+            return
         if member.top_role >= ctx.author.top_role:
             await ctx.send("You cannot ban someone with an equal or higher role.")
             return
@@ -54,7 +64,7 @@ class Moderation(commands.Cog, name="Moderation"):
         await ctx.send(embed=embed)
 
     @commands.command(name="unban")
-    @commands.has_permissions(ban_members=True)
+    @commands.has_permissions(administrator=True)
     @commands.bot_has_permissions(ban_members=True)
     async def unban(self, ctx: commands.Context, user_id: int):
         """Unban a user by their ID.
@@ -69,7 +79,7 @@ class Moderation(commands.Cog, name="Moderation"):
             await ctx.send("That user is not banned or does not exist.")
 
     @commands.command(name="mute", aliases=["timeout"])
-    @commands.has_permissions(moderate_members=True)
+    @commands.has_permissions(administrator=True)
     @commands.bot_has_permissions(moderate_members=True)
     async def mute(self, ctx: commands.Context, member: discord.Member, duration: int = 10, *, reason: str = "No reason provided"):
         """Timeout a member for a specified number of minutes.
@@ -77,6 +87,9 @@ class Moderation(commands.Cog, name="Moderation"):
         Usage: .mute @user [minutes] [reason]
         Default: 10 minutes. Max: 40320 (28 days).
         """
+        if self._is_bot(member):
+            await ctx.send("I can't mute myself.")
+            return
         if member.top_role >= ctx.author.top_role:
             await ctx.send("You cannot mute someone with an equal or higher role.")
             return
@@ -93,7 +106,7 @@ class Moderation(commands.Cog, name="Moderation"):
         await ctx.send(embed=embed)
 
     @commands.command(name="unmute", aliases=["untimeout"])
-    @commands.has_permissions(moderate_members=True)
+    @commands.has_permissions(administrator=True)
     @commands.bot_has_permissions(moderate_members=True)
     async def unmute(self, ctx: commands.Context, member: discord.Member):
         """Remove a timeout from a member.
@@ -104,7 +117,7 @@ class Moderation(commands.Cog, name="Moderation"):
         await ctx.send(f"Removed timeout from **{member}**.")
 
     @commands.command(name="purge", aliases=["clear", "prune"])
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_permissions(administrator=True)
     @commands.bot_has_permissions(manage_messages=True)
     async def purge(self, ctx: commands.Context, amount: int, member: discord.Member = None):
         """Delete messages from the channel.
@@ -128,7 +141,7 @@ class Moderation(commands.Cog, name="Moderation"):
         await msg.delete(delay=3)
 
     @commands.command(name="slowmode")
-    @commands.has_permissions(manage_channels=True)
+    @commands.has_permissions(administrator=True)
     @commands.bot_has_permissions(manage_channels=True)
     async def slowmode(self, ctx: commands.Context, seconds: int = 0):
         """Set slowmode delay for the current channel.
@@ -146,7 +159,7 @@ class Moderation(commands.Cog, name="Moderation"):
             await ctx.send(f"Slowmode set to **{seconds}** seconds.")
 
     @commands.command(name="lock")
-    @commands.has_permissions(manage_channels=True)
+    @commands.has_permissions(administrator=True)
     @commands.bot_has_permissions(manage_roles=True)
     async def lock_channel(self, ctx: commands.Context):
         """Lock the current channel (prevent @everyone from sending messages).
@@ -159,7 +172,7 @@ class Moderation(commands.Cog, name="Moderation"):
         await ctx.send("This channel has been locked.")
 
     @commands.command(name="unlock")
-    @commands.has_permissions(manage_channels=True)
+    @commands.has_permissions(administrator=True)
     @commands.bot_has_permissions(manage_roles=True)
     async def unlock_channel(self, ctx: commands.Context):
         """Unlock the current channel.
@@ -172,12 +185,15 @@ class Moderation(commands.Cog, name="Moderation"):
         await ctx.send("This channel has been unlocked.")
 
     @commands.command(name="warn")
-    @commands.has_permissions(moderate_members=True)
+    @commands.has_permissions(administrator=True)
     async def warn(self, ctx: commands.Context, member: discord.Member, *, reason: str = "No reason provided"):
         """Issue a warning to a member (logged in chat).
 
         Usage: .warn @user [reason]
         """
+        if self._is_bot(member):
+            await ctx.send("I can't warn myself.")
+            return
         embed = discord.Embed(title="Member Warned", color=0xF1C40F)
         embed.add_field(name="User", value=f"{member.mention} ({member.id})")
         embed.add_field(name="Moderator", value=str(ctx.author))
@@ -192,13 +208,16 @@ class Moderation(commands.Cog, name="Moderation"):
             pass
 
     @commands.command(name="nick", aliases=["nickname"])
-    @commands.has_permissions(manage_nicknames=True)
+    @commands.has_permissions(administrator=True)
     @commands.bot_has_permissions(manage_nicknames=True)
     async def change_nick(self, ctx: commands.Context, member: discord.Member, *, nickname: str = None):
         """Change a member's nickname (omit nickname to reset).
 
         Usage: .nick @user [new_nickname]
         """
+        if self._is_bot(member):
+            await ctx.send("I can't change my own nickname through this command.")
+            return
         if member.top_role >= ctx.author.top_role:
             await ctx.send("You cannot change the nickname of someone with an equal or higher role.")
             return

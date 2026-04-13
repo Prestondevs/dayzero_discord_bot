@@ -152,7 +152,7 @@ class Scheduling(commands.Cog, name="Scheduling"):
         await self.bot.wait_until_ready()
 
     @commands.command(name="schedule", aliases=["announce"])
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_permissions(administrator=True)
     async def schedule_announcement(self, ctx: commands.Context, delay: str, channel: discord.TextChannel, *, message: str):
         """Schedule an announcement to be sent in a specific channel after a delay.
 
@@ -192,7 +192,7 @@ class Scheduling(commands.Cog, name="Scheduling"):
         await ctx.send(embed=embed)
 
     @commands.command(name="scheduletitled", aliases=["announcetitled"])
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_permissions(administrator=True)
     async def schedule_titled(self, ctx: commands.Context, delay: str, channel: discord.TextChannel, title: str, *, message: str):
         """Schedule an announcement with a custom title in a specific channel.
 
@@ -231,7 +231,7 @@ class Scheduling(commands.Cog, name="Scheduling"):
         await ctx.send(embed=embed)
 
     @commands.command(name="recurring", aliases=["repeat"])
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_permissions(administrator=True)
     async def recurring_announcement(self, ctx: commands.Context, interval: str, channel: discord.TextChannel, *, message: str):
         """Schedule a recurring announcement in a specific channel.
 
@@ -276,7 +276,7 @@ class Scheduling(commands.Cog, name="Scheduling"):
         await ctx.send(embed=embed)
 
     @commands.command(name="schedules", aliases=["listschedules", "scheduled"])
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_permissions(administrator=True)
     async def list_schedules(self, ctx: commands.Context):
         """List all scheduled announcements for this server.
 
@@ -301,7 +301,7 @@ class Scheduling(commands.Cog, name="Scheduling"):
         await ctx.send(embed=embed)
 
     @commands.command(name="cancelschedule", aliases=["unschedule", "rmschedule"])
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_permissions(administrator=True)
     async def cancel_schedule(self, ctx: commands.Context, schedule_id: str):
         """Cancel a scheduled announcement by its ID.
 

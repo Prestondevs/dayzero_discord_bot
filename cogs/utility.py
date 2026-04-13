@@ -230,7 +230,7 @@ class Utility(commands.Cog, name="Utility"):
         await ctx.send(embed=embed)
 
     @commands.command(name="embed")
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_permissions(administrator=True)
     async def build_embed(self, ctx: commands.Context, title: str, *, description: str):
         """Create a custom embed message.
 
