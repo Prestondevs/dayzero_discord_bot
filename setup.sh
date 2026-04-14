@@ -2,7 +2,7 @@
 cd "$(dirname "$0")"
 BOT_DIR=$(pwd)
 
-echo "=== DayZero Bot Setup ==="
+echo "DayZero Bot Setup"
 
 # Install dependencies
 echo "Installing Python dependencies..."
@@ -36,7 +36,7 @@ nohup python3 bot.py > bot.log 2>&1 &
 echo "Bot started (PID: $!)."
 
 echo ""
-echo "=== Setup complete ==="
+echo "Setup complete"
 echo "Logs: $BOT_DIR/bot.log"
 echo "Update log: $BOT_DIR/update.log"
 echo "Restart log: $BOT_DIR/restart.log"
