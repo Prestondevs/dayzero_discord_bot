@@ -60,6 +60,7 @@ STATUS_QUOTES = [
     "rm -rf doubts",
     "Trust no one. Verify everything.",
     "Have you tried turning it off and on again?",
+    f"{PREFIX}contribute | help us grow",
 ]
 
 @tasks.loop(minutes=5)
