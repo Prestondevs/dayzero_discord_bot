@@ -34,19 +34,24 @@ CATEGORY_ORDER = [
 def _get_permission_label(cmd: commands.Command) -> str | None:
     """Extract the required user permission from a command's checks."""
     for check in cmd.checks:
-        if hasattr(check, "__qualname__") and "has_permissions" in check.__qualname__:
-            # Pull the permission dict from the check's closure
-            closure = check.__closure__
-            if closure:
-                for cell in closure:
-                    try:
-                        val = cell.cell_contents
-                        if isinstance(val, dict):
-                            perms = [k.replace("_", " ").title() for k, v in val.items() if v]
-                            if perms:
-                                return ", ".join(perms)
-                    except ValueError:
-                        continue
+        closure = getattr(check, "__closure__", None)
+        if not closure:
+            continue
+        for cell in closure:
+            try:
+                val = cell.cell_contents
+            except ValueError:
+                continue
+            # Look for a discord.Permissions object (newer discord.py)
+            if isinstance(val, discord.Permissions):
+                perms = [p.replace("_", " ").title() for p, v in val if v]
+                if perms:
+                    return ", ".join(perms)
+            # Look for a raw dict (older discord.py)
+            if isinstance(val, dict):
+                perms = [k.replace("_", " ").title() for k, v in val.items() if v]
+                if perms:
+                    return ", ".join(perms)
     return None
 
 
