@@ -50,7 +50,7 @@ class Utility(commands.Cog, name="Utility"):
         await ctx.send(f"Uptime: **{' '.join(parts)}**")
 
     @commands.command(name="botinfo", aliases=["about"])
-    async def bot_info(self, ctx: commands.Context):
+    async def info(self, ctx: commands.Context):
         """Show information about the bot.
 
         Usage: .botinfo

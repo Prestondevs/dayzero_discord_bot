@@ -44,10 +44,18 @@ A feature-rich Discord bot built for the DayZero Cybersecurity Club. Packed with
 - Bot self-protection (can't be used against itself)
 
 ### Utility
-- Server info, user info, role info, avatar viewer
-- Polls, votes, coin flip, dice rolls
-- Custom embed builder
-- Ping, uptime, bot info
+- **Ping** — Show bot latency
+- **Uptime** — Show how long the bot has been running
+- **Bot Info** — Bot stats, version, server count
+- **Server Info** — Server details, member count, boost level
+- **User Info** — User account details and roles
+- **Avatar** — View a user's avatar in full size
+- **Role Info** — Role details and permissions
+- **Poll** — Create a poll with up to 10 options
+- **Vote** — Quick yes/no vote
+- **Coin Flip / Dice Roll** — Random coin flip or NdN dice roll
+- **Embed Builder** — Create custom embed messages (admin)
+- **Contribute** — Link to the GitHub repo
 
 ### Welcome System
 - Configurable welcome/leave messages
