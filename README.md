@@ -1,0 +1,107 @@
+# DayZero Discord Bot
+
+A feature-rich Discord bot built for the DayZero Cybersecurity Club. Packed with security tools, CTF tracking, encoding utilities, moderation, and more.
+
+## Features
+
+### Security Tools
+- **IP Lookup** — Geolocation and network info for any IP or domain
+- **DNS / Reverse DNS** — Query DNS records, reverse lookups
+- **CVE Search** — Look up vulnerabilities by CVE ID with CVSS scores
+- **WHOIS** — Domain registration info
+- **HTTP Headers** — Security header audit for any URL
+- **Port Scanner** — TCP connect test on a host/port
+- **Port Reference** — Common port number database
+- **Subnet Calculator** — CIDR notation breakdown
+- **Hash Generator** — MD5, SHA1, SHA256, SHA512
+- **Password Checker** — Strength analysis with entropy scoring
+
+### Encoding & Ciphers
+- Base64, Hex, URL, Binary, Morse code encode/decode
+- ROT13, Caesar cipher (with brute force option)
+- String analysis with encoding detection
+
+### CTFTime Integration
+- Automatic hourly updates of upcoming CTF competitions
+- Manual lookup with `.ctftime`
+- Configure a channel with `.setctftimechannel #channel`
+
+### Security News
+- Automatic hourly posts from The Hacker News RSS feed
+- Manual lookup with `.secnews`
+- Configure a channel with `.setsecnewschannel #channel`
+
+### Scheduling
+- Schedule announcements to specific channels with a delay
+- Recurring announcements on an interval
+- Personal reminders
+- All schedules persist across restarts via CSV
+
+### Moderation (Admin Only)
+- Kick, ban, unban, mute/timeout, unmute
+- Purge messages, slowmode, channel lock/unlock
+- Warnings, nickname changes
+- Bot self-protection (can't be used against itself)
+
+### Utility
+- Server info, user info, role info, avatar viewer
+- Polls, votes, coin flip, dice rolls
+- Custom embed builder
+- Ping, uptime, bot info
+
+### Welcome System
+- Configurable welcome/leave messages
+- Auto-role assignment on join
+- Optional DM on join
+
+## Setup
+
+### Requirements
+- Python 3.10+
+- A Discord bot token from the [Developer Portal](https://discord.com/developers/applications)
+
+### Install
+```bash
+git clone https://github.com/Prestondevs/dayzero_discord_bot.git
+cd dayzero_discord_bot
+pip install discord.py aiohttp python-dotenv
+```
+
+### Configure
+```bash
+echo "TOKEN=your_bot_token_here" > .env
+```
+
+Optional: set a custom prefix (default is `.`):
+```bash
+echo "PREFIX=!" >> .env
+```
+
+### Run
+```bash
+python bot.py
+```
+
+To run in the background on a server:
+```bash
+nohup python3 bot.py > bot.log 2>&1 &
+```
+
+### Bot Permissions
+When inviting the bot, it needs:
+- Administrator (recommended), or individually:
+  - Kick/Ban Members, Moderate Members
+  - Manage Channels, Manage Roles, Manage Nicknames, Manage Messages
+  - Send Messages, Embed Links, Read Message History, Add Reactions
+
+Enable these intents in the Developer Portal:
+- **Message Content Intent**
+- **Server Members Intent**
+
+## Permissions
+
+All moderation, scheduling, and configuration commands require **Administrator**. Encoding tools, security lookups, and informational commands are available to everyone.
+
+---
+
+*Authored by Preston V.*
