@@ -229,6 +229,24 @@ class Utility(commands.Cog, name="Utility"):
         embed.add_field(name="Total", value=str(sum(rolls)))
         await ctx.send(embed=embed)
 
+    @commands.command(name="contribute", aliases=["github", "repo", "source"])
+    async def contribute(self, ctx: commands.Context):
+        """Get the link to the bot's GitHub repository.
+
+        Usage: .contribute
+        """
+        embed = discord.Embed(
+            title="Contribute to DayZero Bot",
+            description=(
+                "Want to contribute, report a bug, or check out the source code?\n\n"
+                "**GitHub:** [Prestondevs/dayzero_discord_bot]"
+                "(https://github.com/Prestondevs/dayzero_discord_bot)"
+            ),
+            color=0x00FF88,
+        )
+        embed.set_footer(text="Pull requests welcome!")
+        await ctx.send(embed=embed)
+
     @commands.command(name="embed")
     @commands.has_permissions(administrator=True)
     async def build_embed(self, ctx: commands.Context, title: str, *, description: str):
