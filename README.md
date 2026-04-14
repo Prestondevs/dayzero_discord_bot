@@ -82,8 +82,39 @@ echo "PREFIX=!" >> .env
 python bot.py
 ```
 
-To run in the background on a server:
+## Deploying on a Server
+
 ```bash
+git clone https://github.com/Prestondevs/dayzero_discord_bot.git
+cd dayzero_discord_bot
+pip3 install discord.py aiohttp python-dotenv
+echo "TOKEN=your_bot_token_here" > .env
+```
+
+Then to keep it running after you close the terminal:
+
+```bash
+nohup python3 bot.py > bot.log 2>&1 &
+```
+
+- `nohup` — survives you logging out
+- `> bot.log 2>&1` — logs output to a file
+- `&` — runs in background
+
+Useful commands after that:
+
+```bash
+cat bot.log           # check logs
+tail -f bot.log       # watch logs live
+ps aux | grep bot.py  # find the process
+kill <PID>            # stop it
+```
+
+To update later:
+
+```bash
+kill $(pgrep -f bot.py)
+git pull
 nohup python3 bot.py > bot.log 2>&1 &
 ```
 
