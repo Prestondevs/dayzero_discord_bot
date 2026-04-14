@@ -9,118 +9,14 @@ import discord
 from discord.ext import commands
 
 CATEGORY_INFO = {
-    "Security Tools": {
-        "icon": "🔒",
-        "desc": "Network recon, CVE lookup, hashing, and more",
-        "commands": {
-            "iplookup": "Look up IP/domain geolocation and network info",
-            "dns": "Query DNS records (A, AAAA, MX, TXT, NS, etc.)",
-            "rdns": "Reverse DNS lookup on an IP address",
-            "headers": "Audit HTTP security headers for a URL",
-            "cve": "Search for a CVE by ID with CVSS scores",
-            "whois": "WHOIS domain registration lookup",
-            "hash": "Generate MD5/SHA1/SHA256/SHA512 hashes",
-            "password": "Analyze password strength and entropy",
-            "subnet": "Calculate subnet info from CIDR notation",
-            "port": "Look up common port numbers",
-            "portcheck": "Test if a TCP port is open on a host",
-        },
-    },
-    "Encoding": {
-        "icon": "🔤",
-        "desc": "Base64, hex, binary, morse, and cipher tools",
-        "commands": {
-            "b64encode": "Encode text to Base64",
-            "b64decode": "Decode Base64 to text",
-            "hexencode": "Encode text to hex",
-            "hexdecode": "Decode hex to text",
-            "urlencode": "URL-encode a string",
-            "urldecode": "URL-decode a string",
-            "rot13": "Apply ROT13",
-            "caesar": "Caesar cipher with custom shift",
-            "caesarbrute": "Brute-force all 25 Caesar rotations",
-            "tobinary": "Text to binary",
-            "frombinary": "Binary to text",
-            "tomorse": "Text to Morse code",
-            "frommorse": "Morse code to text",
-            "analyze": "Analyze a string (entropy, encoding detection)",
-        },
-    },
-    "CTFTime": {
-        "icon": "🏁",
-        "desc": "CTF competition tracking from CTFTime.org",
-        "commands": {
-            "ctftime": "Show upcoming CTF competitions",
-            "setctftimechannel": "Set channel for automatic CTF updates",
-            "removectftimechannel": "Disable automatic CTF updates",
-        },
-    },
-    "Security News": {
-        "icon": "📰",
-        "desc": "Cybersecurity news from The Hacker News",
-        "commands": {
-            "secnews": "Show latest cybersecurity news",
-            "setsecnewschannel": "Set channel for automatic news updates",
-            "removesecnewschannel": "Disable automatic news updates",
-        },
-    },
-    "Moderation": {
-        "icon": "🛡️",
-        "desc": "Server management (admin only)",
-        "commands": {
-            "kick": "Kick a member",
-            "ban": "Ban a member",
-            "unban": "Unban a user by ID",
-            "mute": "Timeout a member",
-            "unmute": "Remove a timeout",
-            "purge": "Bulk delete messages",
-            "slowmode": "Set channel slowmode",
-            "lock": "Lock a channel",
-            "unlock": "Unlock a channel",
-            "warn": "Warn a member",
-            "nick": "Change a member's nickname",
-        },
-    },
-    "Scheduling": {
-        "icon": "📅",
-        "desc": "Announcements, reminders, and recurring messages",
-        "commands": {
-            "schedule": "Schedule an announcement to a channel",
-            "scheduletitled": "Schedule a titled announcement",
-            "recurring": "Set up a recurring announcement",
-            "schedules": "List all scheduled announcements",
-            "cancelschedule": "Cancel a scheduled announcement",
-            "remind": "Set a personal reminder",
-            "reminders": "List your pending reminders",
-            "cancelreminder": "Cancel a reminder",
-        },
-    },
-    "Utility": {
-        "icon": "🔧",
-        "desc": "Server info, polls, dice rolls, and more",
-        "commands": {
-            "ping": "Show bot latency",
-            "uptime": "Show bot uptime",
-            "botinfo": "Show bot info and stats",
-            "serverinfo": "Show server info",
-            "userinfo": "Show user info",
-            "avatar": "Show a user's avatar",
-            "roleinfo": "Show role info and permissions",
-            "poll": "Create a poll with options",
-            "vote": "Create a quick yes/no vote",
-            "coinflip": "Flip a coin",
-            "roll": "Roll dice (NdN format)",
-            "contribute": "Get the GitHub repo link",
-            "embed": "Create a custom embed message",
-        },
-    },
-    "Welcome": {
-        "icon": "👋",
-        "desc": "Member join/leave messages and auto-role",
-        "commands": {
-            "welcome": "Configure welcome system (use subcommands)",
-        },
-    },
+    "Security Tools": {"icon": "🔒", "desc": "Network recon, CVE lookup, hashing, and more"},
+    "Encoding": {"icon": "🔤", "desc": "Base64, hex, binary, morse, and cipher tools"},
+    "CTFTime": {"icon": "🏁", "desc": "CTF competition tracking from CTFTime.org"},
+    "Security News": {"icon": "📰", "desc": "Cybersecurity news from The Hacker News"},
+    "Moderation": {"icon": "🛡️", "desc": "Kick, ban, mute, purge, and server management"},
+    "Scheduling": {"icon": "📅", "desc": "Announcements, reminders, and recurring messages"},
+    "Utility": {"icon": "🔧", "desc": "Server info, polls, dice rolls, and more"},
+    "Welcome": {"icon": "👋", "desc": "Member join/leave messages and auto-role"},
 }
 
 CATEGORY_ORDER = [
@@ -139,6 +35,7 @@ def _get_permission_label(cmd: commands.Command) -> str | None:
     """Extract the required user permission from a command's checks."""
     for check in cmd.checks:
         if hasattr(check, "__qualname__") and "has_permissions" in check.__qualname__:
+            # Pull the permission dict from the check's closure
             closure = check.__closure__
             if closure:
                 for cell in closure:
@@ -165,7 +62,6 @@ class HelpCog(commands.Cog, name="Help"):
 
         Usage: .help [command_name]
         Example: .help kick
-        Example: .help schedule
         """
         prefix = ctx.prefix
 
@@ -175,12 +71,13 @@ class HelpCog(commands.Cog, name="Help"):
                 await ctx.send(f"Unknown command: `{command_name}`. Use `{prefix}help` to see all commands.")
                 return
 
+            # Build detailed help embed
             embed = discord.Embed(
                 title=f"{prefix}{cmd.qualified_name}",
                 color=0x00FF88,
             )
 
-            # Parse docstring into sections
+            # Split docstring into description and fields
             doc = cmd.help or "No description available."
             lines = doc.strip().split("\n")
 
@@ -193,20 +90,14 @@ class HelpCog(commands.Cog, name="Help"):
                 stripped = line.strip()
                 if stripped.lower().startswith("usage:"):
                     section = "usage"
-                    content = stripped.split(":", 1)[1].strip()
-                    if content:
-                        usage_lines.append(content)
+                    usage_lines.append(stripped.replace("Usage:", "").replace("usage:", "").strip())
                 elif stripped.lower().startswith("example:"):
                     section = "example"
-                    content = stripped.split(":", 1)[1].strip()
-                    if content:
-                        example_lines.append(content)
+                    example_lines.append(stripped.replace("Example:", "").replace("example:", "").strip())
                 elif section == "usage":
                     if stripped.lower().startswith("example:"):
                         section = "example"
-                        content = stripped.split(":", 1)[1].strip()
-                        if content:
-                            example_lines.append(content)
+                        example_lines.append(stripped.replace("Example:", "").replace("example:", "").strip())
                     elif stripped:
                         usage_lines.append(stripped)
                     else:
@@ -217,9 +108,9 @@ class HelpCog(commands.Cog, name="Help"):
                     else:
                         section = "desc"
                 else:
-                    if stripped:
-                        description_lines.append(stripped)
+                    description_lines.append(stripped)
 
+            # Clean up description
             desc_text = "\n".join(description_lines).strip()
             if desc_text:
                 embed.description = desc_text
@@ -242,47 +133,43 @@ class HelpCog(commands.Cog, name="Help"):
                 embed.add_field(
                     name="Aliases",
                     value=" ".join(f"`{prefix}{a}`" for a in cmd.aliases),
-                    inline=True,
+                    inline=False,
                 )
 
+            # Permission info
             perm = _get_permission_label(cmd)
             if perm:
-                embed.add_field(name="Requires", value=f"`{perm}`", inline=True)
+                embed.add_field(name="Requires", value=f"`{perm}`", inline=False)
 
+            # Category
             if cmd.cog:
                 embed.add_field(name="Category", value=cmd.cog.qualified_name, inline=True)
 
             if isinstance(cmd, commands.Group):
-                sub_lines = []
-                for sub in sorted(cmd.commands, key=lambda s: s.name):
-                    sub_lines.append(f"`{prefix}{cmd.qualified_name} {sub.name}` — {sub.short_doc or 'No description'}")
-                embed.add_field(
-                    name="Subcommands",
-                    value="\n".join(sub_lines) or "None",
-                    inline=False,
-                )
+                subs = " ".join(f"`{sub.name}`" for sub in cmd.commands)
+                embed.add_field(name="Subcommands", value=subs or "None", inline=False)
 
             embed.set_footer(text=f"Use {prefix}help to see all commands")
             await ctx.send(embed=embed)
             return
 
-        # Full help menu — send multiple embeds for cleaner formatting
-        header_embed = discord.Embed(
-            title="DayZero Bot — Command Reference",
+        # Full help menu
+        embed = discord.Embed(
+            title="DayZero Bot",
             description=(
                 f"Use `{prefix}help <command>` for detailed info on any command.\n"
-                f"`*` = requires **Administrator**\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                f"Commands marked with `*` require **Administrator**."
             ),
             color=0x00FF88,
         )
-        header_embed.set_thumbnail(url=self.bot.user.display_avatar.url)
-        await ctx.send(embed=header_embed)
+        embed.set_thumbnail(url=self.bot.user.display_avatar.url)
 
+        cogs_listed = set()
         for cog_name in CATEGORY_ORDER:
             cog = self.bot.get_cog(cog_name)
             if not cog:
                 continue
+            cogs_listed.add(cog_name)
             cmds = sorted(cog.get_commands(), key=lambda c: c.name)
             if not cmds:
                 continue
@@ -290,36 +177,30 @@ class HelpCog(commands.Cog, name="Help"):
             info = CATEGORY_INFO.get(cog_name, {})
             icon = info.get("icon", "")
             desc = info.get("desc", "")
-            cmd_descriptions = info.get("commands", {})
 
-            embed = discord.Embed(
-                title=f"{icon} {cog_name}",
-                description=f"*{desc}*" if desc else None,
-                color=0x00FF88,
-            )
-
+            cmd_entries = []
             for cmd in cmds:
                 perm = _get_permission_label(cmd)
-                admin_tag = " `[Admin]`" if perm and "administrator" in perm.lower() else ""
-                brief = cmd_descriptions.get(cmd.name, cmd.short_doc or "No description")
-                embed.add_field(
-                    name=f"{prefix}{cmd.name}{admin_tag}",
-                    value=brief,
-                    inline=True,
-                )
+                marker = "*" if perm and "administrator" in perm.lower() else ""
+                cmd_entries.append(f"`{cmd.name}`{marker}")
 
-            await ctx.send(embed=embed)
+            cmd_list = " ".join(cmd_entries)
+            header = f"{icon} {cog_name}" if icon else cog_name
+            value = f"*{desc}*\n{cmd_list}" if desc else cmd_list
 
-        footer_embed = discord.Embed(
-            description=(
-                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"**Tip:** `{prefix}help <command>` for usage, examples, and aliases.\n"
-                f"**Contribute:** `{prefix}contribute` for the GitHub repo."
-            ),
-            color=0x00FF88,
-        )
-        footer_embed.set_footer(text="DayZero Cybersecurity Club")
-        await ctx.send(embed=footer_embed)
+            embed.add_field(name=header, value=value, inline=False)
+
+        for cog_name, cog in self.bot.cogs.items():
+            if cog_name in cogs_listed or cog_name == "Help":
+                continue
+            cmds = cog.get_commands()
+            if not cmds:
+                continue
+            cmd_list = " ".join(f"`{cmd.name}`" for cmd in sorted(cmds, key=lambda c: c.name))
+            embed.add_field(name=cog_name, value=cmd_list, inline=False)
+
+        embed.set_footer(text="DayZero Cybersecurity Club")
+        await ctx.send(embed=embed)
 
 
 async def setup(bot: commands.Bot):
