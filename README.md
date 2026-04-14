@@ -64,7 +64,7 @@ A feature-rich Discord bot built for the DayZero Cybersecurity Club. Packed with
 ```bash
 git clone https://github.com/Prestondevs/dayzero_discord_bot.git
 cd dayzero_discord_bot
-pip install discord.py aiohttp python-dotenv
+pip install -r requirements.txt
 ```
 
 ### Configure
