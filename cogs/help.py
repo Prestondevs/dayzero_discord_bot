@@ -15,7 +15,7 @@ CATEGORY_INFO = {
     "Security News": {"icon": "📰", "desc": "Cybersecurity news from The Hacker News"},
     "Moderation": {"icon": "🛡️", "desc": "Kick, ban, mute, purge, and server management"},
     "Scheduling": {"icon": "📅", "desc": "Announcements, reminders, and recurring messages"},
-    "Utility": {"icon": "🔧", "desc": "Server info, polls, dice rolls, and more"},
+    "Utility": {"icon": "🔧", "desc": "Server info, polls, dice rolls, CTF team setup, and more"},
     "Welcome": {"icon": "👋", "desc": "Member join/leave messages and auto-role"},
 }
 

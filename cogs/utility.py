@@ -7,6 +7,7 @@ uptime, role info, emoji list, and a coin flip / dice roll.
 
 import platform
 import random
+import re
 import time
 
 import discord
@@ -265,6 +266,121 @@ class Utility(commands.Cog, name="Utility"):
             await ctx.message.delete()
         except discord.Forbidden:
             pass
+
+
+    @commands.command(name="createctfteam", aliases=["ctfteam", "newctf"])
+    @commands.has_permissions(administrator=True)
+    @commands.bot_has_permissions(manage_channels=True, manage_roles=True)
+    async def create_ctf_team(self, ctx: commands.Context, comp_name: str, *members: discord.Member):
+        """Create a CTF competition channel, role, and assign team members.
+
+        Usage: .createctfteam <comp_name> @member1 @member2 ...
+        Example: .createctfteam CPTC-2026 @alice @bob @charlie
+
+        This will:
+        - Create a role named after the competition
+        - Assign all mentioned members to that role
+        - Create a private channel in the Competitions category
+        - Post onboarding info with dues and ethics contract links
+        """
+        if not members:
+            await ctx.send(
+                f"You need to mention at least one member.\n"
+                f"Usage: `{ctx.prefix}createctfteam <comp_name> @member1 @member2 ...`"
+            )
+            return
+
+        # Find the Competitions category (case-insensitive, flexible matching)
+        comp_category = None
+        for cat in ctx.guild.categories:
+            if re.search(r"comp(etition)?s?", cat.name, re.IGNORECASE):
+                comp_category = cat
+                break
+
+        # Create the role
+        role = await ctx.guild.create_role(
+            name=comp_name,
+            mentionable=True,
+            reason=f"CTF team created by {ctx.author}",
+        )
+
+        # Assign all members to the role
+        for member in members:
+            await member.add_roles(role, reason=f"Added to CTF team: {comp_name}")
+
+        # Channel name (Discord requires lowercase, no spaces)
+        channel_name = comp_name.lower().replace(" ", "-")
+
+        # Set up permissions: deny @everyone, allow the team role + bot
+        overwrites = {
+            ctx.guild.default_role: discord.PermissionOverwrite(
+                view_channel=False,
+                send_messages=False,
+            ),
+            role: discord.PermissionOverwrite(
+                view_channel=True,
+                send_messages=True,
+                read_message_history=True,
+                attach_files=True,
+                embed_links=True,
+            ),
+            ctx.guild.me: discord.PermissionOverwrite(
+                view_channel=True,
+                send_messages=True,
+                manage_channels=True,
+            ),
+        }
+
+        channel = await ctx.guild.create_text_channel(
+            name=channel_name,
+            category=comp_category,
+            overwrites=overwrites,
+            reason=f"CTF competition channel created by {ctx.author}",
+        )
+
+        # Build the member mention list
+        member_list = "\n".join(f"- {m.mention}" for m in members)
+
+        welcome_embed = discord.Embed(
+            title=f"Welcome to {comp_name}!",
+            description=(
+                f"You have been selected to compete in **{comp_name}**. "
+                f"This channel is your team's private workspace for coordination, "
+                f"writeups, and strategy.\n\n"
+                f"**Team Members:**\n{member_list}"
+            ),
+            color=0x00FF88,
+        )
+        welcome_embed.add_field(
+            name="Before You Compete",
+            value=(
+                "If you haven't already, please complete **both** of the following:\n\n"
+                "**1. Pay Club Dues**\n"
+                "[Click here to pay dues](https://forms.gle/1VnMkDJei2sEKitg6)\n\n"
+                "**2. Sign the Ethical Contract**\n"
+                "[Click here to sign](https://forms.gle/3vabMiUB7GGnbXWW6)\n\n"
+                "Both must be completed before you can officially represent DayZero in competition."
+            ),
+            inline=False,
+        )
+        welcome_embed.set_footer(text="Good luck, have fun, and hack responsibly.")
+
+        await channel.send(f"{role.mention}", embed=welcome_embed)
+
+        # Confirm in the original channel
+        confirm_embed = discord.Embed(
+            title="CTF Team Created",
+            color=0x2ECC71,
+        )
+        confirm_embed.add_field(name="Competition", value=comp_name)
+        confirm_embed.add_field(name="Channel", value=channel.mention)
+        confirm_embed.add_field(name="Role", value=role.mention)
+        confirm_embed.add_field(name="Members", value=f"{len(members)} assigned", inline=True)
+        if comp_category:
+            confirm_embed.add_field(name="Category", value=comp_category.name)
+        else:
+            confirm_embed.add_field(name="Category", value="None (created at top level)")
+        await ctx.send(embed=confirm_embed)
 
 
 async def setup(bot: commands.Bot):
